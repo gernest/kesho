@@ -10,7 +10,7 @@ func TestKTemplate_All(t *testing.T) {
 	ass := NewAssets("assets", "asset_test.db")
 	defer ass.Store.DeleteDatabase()
 
-	templatePath := []string{"testdata/default", "leo"}
+	templatePath := []string{"testdata/default", "kesho"}
 
 	ktemp := &KTemplate{
 		Bucket: "templates",
@@ -19,7 +19,7 @@ func TestKTemplate_All(t *testing.T) {
 		Cache:  make(map[string]*template.Template),
 	}
 
-	// Load templated from disc and save to database
+	// Load templates from disc and save to database
 
 	for _, v := range templatePath {
 		err := ktemp.LoadToDB(v)
@@ -34,7 +34,7 @@ func TestKTemplate_All(t *testing.T) {
 		t.Error(err)
 	}
 
-	tmplNames := []string{"default", "leo"}
+	tmplNames := []string{"default", "kesho"}
 	for _, v := range tmplNames {
 		if !ktemp.Exists(v) {
 			t.Error(ktemp.Cache)
@@ -59,8 +59,8 @@ func TestKTemplate_All(t *testing.T) {
 	delete(ktemp.Cache, "default")
 
 	// make sure it aint there
-	if ktemp.Cache["default"] == nil {
-		t.Errorf("Fuck ISIS")
+	if ktemp.Cache["default"] != nil {
+		t.Errorf("Expected nil got %s", ktemp.Cache["default"].Name())
 	}
 
 	// Lets hope it reloads the template

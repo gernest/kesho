@@ -52,18 +52,14 @@ func main() {
 }
 
 func RunMigration(app *Kesho) error {
-	if app.Templ.Exists("leo") {
+	if app.Templ.Exists("kesho") {
 		return nil
-	} else if app.Templ.Exists("kesho") {
-		return nil
-	} else {
-		if err := app.Templ.LoadToDB("leo"); err != nil {
-			return err
-		}
+	}else {
 		if err := app.Templ.LoadToDB("kesho"); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
