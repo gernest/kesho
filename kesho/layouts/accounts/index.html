@@ -1,0 +1,21 @@
+{{ template "partials/header.html"}}
+<div class="four-fifths  column">
+    <form id="regForm" action="/accounts/create" method="POST">
+        <div class="input-group">
+            <label for="name">Jina la blogu yako</label>
+            <input id="regBlogName" type="text" name="UserName" placeholder="Andika jina ya blogu mfano kesho">
+        </div>
+        <div class="input-group">
+            <label for="password">Namaba yako ya siri</label>
+            <input id="regPassword" type="password" name="Password" placeholder="kuanzia herufi 8 au zaidi...">
+        </div>
+        <div class="input-group">
+            <label for="password">Rudia namba ya siri</label>
+            <input id="regConfirmPass" type="password" name="ConfirmPassword" placeholder="rudia namba ya siri...">
+        </div>
+        <div class="input-group">
+            <input id="regSubmit" type="submit" value="Tengeneza Akaunti" class="btn btn-primary">
+        </div>
+    </form>
+</div>
+{{ template "partials/footer.html"}}

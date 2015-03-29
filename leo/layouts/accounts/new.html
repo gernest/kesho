@@ -1,0 +1,24 @@
+{{ template "partials/header.html"}}
+<div class="container">
+    <div class="row">
+        <div class="two columns">
+            {{ template "partials/left_sidebar.html" . }}
+        </div>
+        <div class="eight columns">
+            <div class="form">
+                <form action="/accounts/create" method="POST" role="form">
+                    <label for="name">Jina la blogu</label>
+                    <input type="text" name="UserName" placeholder="Andika jina ya blogu mfano kesho">
+                    <label for="password">Namaba ya siri</label>
+                    <input type="password" name="Password" placeholder="kuanzia herufi 8 au zaidi...">
+                    <label for="password">Rudia namba ya siri</label>
+                    <input type="password" name="ConfirmPassword" placeholder="rudia namba ya siri...">
+                    <input type="submit" value="Tengeneza Akaunti" class="button button-primary">
+                </form>
+            </div>
+        </div>
+        <div class="two columns">
+        </div>
+    </div>
+</div>
+{{ template "partials/footer.html"}}

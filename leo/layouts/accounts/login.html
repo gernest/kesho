@@ -1,0 +1,21 @@
+{{ template "partials/header.html"}}
+<div class="container">
+    <div class="row">
+        <div class="two columns">
+            {{ template "partials/left_sidebar.html" . }}
+        </div>
+        <div class="eight columns">
+            <form action="#" role="form" class="my2">
+                <label for="name">Jina la blogu</label>
+                <input type="text" name="name" placeholder="Andika jina la blogu yako...">
+                <label for="password">Namba ya siri</label>
+                <input type="password" name="password" placeholder="Andika nambari yako ya siri...">
+                <input type="submit" value="Ingia" class="button button-primary">
+            </form>
+        </div>
+    </div>
+    <div class="two columns">
+    </div>
+</div>
+</div>
+{{ template "partials/footer.html"}}

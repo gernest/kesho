@@ -1,0 +1,46 @@
+/*.green{*/
+    /*color: green;*/
+/*}*/
+/*.brand{*/
+    /*margin: .3em 2em;*/
+/*}*/
+
+/*.text-center {*/
+    /*text-align: center;*/
+/*}*/
+
+/*.menu a {*/
+    /*display: inline-block;*/
+    /*font-weight: 600;*/
+    /*padding: .3em 1em;*/
+    /*color: green;*/
+    /*background: #2e8a86;*/
+    /*margin: 0 .5em;*/
+    /*text-decoration: none;*/
+    /*transition: all .5s;*/
+/*}*/
+
+/*.menu a i {*/
+    /*color: green;*/
+/*}*/
+
+/*.menu li:hover{*/
+    /*background: #326f8a;*/
+/*}*/
+
+/*.menu li:hover a, .menu li:hover i{*/
+    /*color: #fff;*/
+    /*background: #326f8a;*/
+/*}*/
+/*.search-field {*/
+    /*border: 2px green solid;*/
+    /*background-color: white !important;*/
+    /*padding: .1em 1em;*/
+/*}*/
+/*.search-box{*/
+    /*padding: 1em;*/
+    /*border-radius: 40px;*/
+/*}*/
+#loginForm {
+    margin: 1em 1em;
+}

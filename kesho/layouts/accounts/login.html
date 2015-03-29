@@ -1,0 +1,18 @@
+{{ template "partials/header.html"}}
+{{ template "partials/sidebar.html" }}
+<div class="three-fourths  column">
+    {{ if .errors }}
+    {{range $k,$v:= .errors }}
+    <div class=" flash flash-error">
+        <span class="icono-cross flash-close js-flash-close"></span>
+        <strong>{{ $k }}</strong>: {{ $v}}
+    </div>
+    {{ end }}
+    {{ end }}
+    <form id="loginForm" action="/accounts/login" method="POST">
+        <input id="loginUsername" type="text" name="UserName" placeholder="Andika jina la blogu yako...">
+        <input id="loginPassword" type="password" name="Password" placeholder="Andika nambari yako ya siri...">
+        <input id="loginSubmit" type="submit" value="Ingia" class="btn btn-primary">
+    </form>
+</div>
+{{ template "partials/footer.html"}}
