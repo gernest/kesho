@@ -58,7 +58,7 @@ func (ass *Assets) Save(filename, prefix string) (file *File, err error) {
 	if filepath.IsAbs(key) {
 		key = strings.TrimPrefix(key, "/")
 	}
-	if ass.Store.Create(ass.Bucket, key, packedData).Error != nil {
+	if ass.Store.CreateRecord(ass.Bucket, key, packedData).Error != nil {
 		log.Println(err)
 	}
 	return file, err
@@ -140,12 +140,12 @@ func (ass *Assets) Remove(key string) error {
 }
 
 func (ass *Assets) Get(key string) (*File, error) {
-	ass.Store.Get(ass.Bucket, key)
+	ass.Store.GetRecord(ass.Bucket, key)
 	if ass.Store.Error != nil {
 		return nil, ass.Store.Error
 	}
 	if ass.Store.Data == nil && filepath.IsAbs(key) {
-		ass.Store.Get(ass.Bucket, strings.TrimPrefix(key, "/"))
+		ass.Store.GetRecord(ass.Bucket, strings.TrimPrefix(key, "/"))
 		if ass.Store.Error != nil {
 			return nil, ass.Store.Error
 		}

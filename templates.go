@@ -58,11 +58,6 @@ func (t *KTemplate) LoadToDB(pathname string) error {
 	}
 
 	layoutsPath := path.Join(pathname, config.LayoutDir)
-
-	err = t.Store.CreateBucket(t.Bucket) // create bucket to hold all templates
-	if err != nil {
-		return err
-	}
 	err = filepath.Walk(layoutsPath, func(root string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -75,17 +70,7 @@ func (t *KTemplate) LoadToDB(pathname string) error {
 			return err
 		}
 		cleanPath := strings.TrimPrefix(strings.TrimPrefix(root, layoutsPath), "/")
-		return t.Store.db.Update(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte(t.Bucket))
-			if b == nil {
-				return errors.New("kesho KTemplate.LoadToDB: No bucket for the templates found")
-			}
-			tb, err := b.CreateBucketIfNotExists([]byte(config.Name))
-			if err != nil {
-				return err
-			}
-			return tb.Put([]byte(cleanPath), tdata)
-		})
+		return t.Store.createRecord(t.Bucket, cleanPath, tdata, config.Name).Error
 	})
 	if err != nil {
 		return err
