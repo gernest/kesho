@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
+	"fmt"
 )
 
 func TestStore_All(t *testing.T) {
@@ -63,6 +64,42 @@ func TestStore_All(t *testing.T) {
 			t.Errorf("Expected %s got %s", v.value, store.Data)
 		}
 	}
+	for k, v := range data {
+		x := fmt.Sprintf("%s %d", v.value, k)
+		err := store.PutRecord(defaultBucket, v.key, []byte(x), nests[k]...).Error
+		if err != nil {
+			t.Error(err)
+		}
+		if string(store.Data) != x {
+			t.Errorf("Expected %s got %s", x, store.Data)
+		}
+	}
+	for k, v := range data {
+		x := fmt.Sprintf("%s %d", v.value, k)
+		err := store.GetRecord(defaultBucket, v.key, nests[k]...).Error
+		if err != nil {
+			t.Error(err)
+		}
+		if string(store.Data) != x {
+			t.Errorf("Expected %s got %s", x, store.Data)
+		}
+	}
+
+	err := store.CreateRecord(defaultBucket, "put", []byte("put")).Error
+	if err!=nil {
+		t.Error(err)
+	}
+	err=store.PutRecord(defaultBucket, "put", []byte("put record")).Error
+	if err!=nil {
+		t.Error(err)
+	}
+	err=store.GetRecord(defaultBucket, "put").Error
+	if err!=nil {
+		t.Error(err)
+	}
+	if string(store.Data)!="put record" {
+		t.Errorf("Expected put record got %s", store.Data)
+	}
 	store.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(defaultBucket))
 		b.CreateBucketIfNotExists([]byte("all_0ne"))
@@ -70,7 +107,7 @@ func TestStore_All(t *testing.T) {
 		b.CreateBucketIfNotExists([]byte("all_three"))
 		return nil
 	})
-	err := store.GetAll(defaultBucket).Error
+	err = store.GetAll(defaultBucket).Error
 	if err != nil {
 		t.Error(err)
 	}
