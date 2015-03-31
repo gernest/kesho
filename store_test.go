@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/boltdb/bolt"
 	"fmt"
+	"github.com/boltdb/bolt"
 )
 
 func TestStore_All(t *testing.T) {
@@ -86,18 +86,18 @@ func TestStore_All(t *testing.T) {
 	}
 
 	err := store.CreateRecord(defaultBucket, "put", []byte("put")).Error
-	if err!=nil {
+	if err != nil {
 		t.Error(err)
 	}
-	err=store.PutRecord(defaultBucket, "put", []byte("put record")).Error
-	if err!=nil {
+	err = store.PutRecord(defaultBucket, "put", []byte("put record")).Error
+	if err != nil {
 		t.Error(err)
 	}
-	err=store.GetRecord(defaultBucket, "put").Error
-	if err!=nil {
+	err = store.GetRecord(defaultBucket, "put").Error
+	if err != nil {
 		t.Error(err)
 	}
-	if string(store.Data)!="put record" {
+	if string(store.Data) != "put record" {
 		t.Errorf("Expected put record got %s", store.Data)
 	}
 	store.db.Update(func(tx *bolt.Tx) error {

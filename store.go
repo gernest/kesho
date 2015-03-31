@@ -50,7 +50,7 @@ func (s *Store) CreateRecord(bucket string, key string, value []byte, buckets ..
 }
 
 func (s *Store) createRecord(bucket string, key string, value []byte, buckets ...string) *Store {
-	if len(buckets)==0 {
+	if len(buckets) == 0 {
 		return s.create(bucket, key, value)
 	}
 	s.Error = s.db.Update(func(tx *bolt.Tx) error {
@@ -78,7 +78,7 @@ func (s *Store) createRecord(bucket string, key string, value []byte, buckets ..
 
 		rst := prev.Get([]byte(key))
 		if rst != nil {
-			s.Data=make([]byte, len((rst)))
+			s.Data = make([]byte, len((rst)))
 			copy(s.Data, rst)
 		}
 		return nil
@@ -95,7 +95,7 @@ func (s *Store) getRecord(bucket, key string, buckets ...string) *Store {
 	if len(buckets) == 0 {
 		return s.get(bucket, key)
 	}
-	s.Error= s.db.View(func(tx *bolt.Tx) error {
+	s.Error = s.db.View(func(tx *bolt.Tx) error {
 		var prev *bolt.Bucket
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
@@ -147,12 +147,12 @@ func (s *Store) get(bucket string, key string) *Store {
 	return s
 }
 
-func (s *Store)PutRecord(bucket, key string, value []byte, buckets ...string) *Store {
+func (s *Store) PutRecord(bucket, key string, value []byte, buckets ...string) *Store {
 	var uerr error
-	if len(buckets)==0 {
+	if len(buckets) == 0 {
 		return s.put(bucket, key, value)
 	}
-	s.Error= s.db.Update(func(tx *bolt.Tx) error {
+	s.Error = s.db.Update(func(tx *bolt.Tx) error {
 		var prev *bolt.Bucket
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
@@ -172,8 +172,8 @@ func (s *Store)PutRecord(bucket, key string, value []byte, buckets ...string) *S
 		}
 		return prev.Put([]byte(key), value)
 	})
-	if s.Error==nil {
-		s.Data=value
+	if s.Error == nil {
+		s.Data = value
 	}
 	return s
 }
@@ -219,7 +219,7 @@ func (s *Store) removeRecord(bucket, key string, buckets ...string) *Store {
 		return s.delete(bucket, key)
 
 	}
-	s.Error= s.db.Update(func(tx *bolt.Tx) error {
+	s.Error = s.db.Update(func(tx *bolt.Tx) error {
 		var prev *bolt.Bucket
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
@@ -250,7 +250,7 @@ func (s *Store) removeRecord(bucket, key string, buckets ...string) *Store {
 }
 
 func (s *Store) delete(bucket, key string) *Store {
-	s.Error= s.db.Update(func(tx *bolt.Tx) error {
+	s.Error = s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
 			return errors.New("Store.Delete: Bucket" + bucket + " Not found")
@@ -279,7 +279,7 @@ func (s *Store) GetAll(bucket string, buckets ...string) *Store {
 		return s
 	}
 
-	s.Error= s.db.View(func(tx *bolt.Tx) error {
+	s.Error = s.db.View(func(tx *bolt.Tx) error {
 		var prev *bolt.Bucket
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
