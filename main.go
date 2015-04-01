@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
-	"resenje.org/sessions/boltstore"
 )
 
 func main() {
@@ -20,17 +20,19 @@ func main() {
 		secretKey       = "892252c6eade0b4ebf32d94aaed79d20"
 		secretValue     = "9451243db34445f4dbf86e0b13bec94d"
 	)
+	cookieStore = securecookie.New([]byte(secretKey), []byte(secretValue))
 
 	cleanDB(mainDB)
 
 	mainStore = NewStore(mainDB, 0600, nil)
 
 	// Setup session store
-	opts := &sessions.Options{MaxAge: 400, Path: "/"}
-	ss, err := boltstore.NewStoreFromDB(mainStore.db, sessionBucket, 100, opts, []byte(secretKey), []byte(secretValue))
+	opts := &sessions.Options{MaxAge: 86400 * 30, Path: "/"}
+	ss, err := NewBStoreFromDB(mainStore.db, sessionBucket, 100, opts, []byte("secret"))
 	if err != nil {
 		log.Panic(err)
 	}
+	sessionStore = ss
 
 	// Main app
 	app := &Kesho{
@@ -42,7 +44,7 @@ func main() {
 		},
 		Store:           mainStore,
 		AccountsBucket:  "Accounts",
-		SessionStore:    ss,
+		SessStore:       ss,
 		SessionName:     sessionName,
 		DefaultTemplate: "kesho",
 	}

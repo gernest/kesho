@@ -3,26 +3,44 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"time"
 	"log"
+	"html/template"
+	"path/filepath"
+	"io/ioutil"
 	"net/http"
-
+	"github.com/justinas/nosurf"
 	"github.com/astaxie/beego/validation"
-	"github.com/e-dard/netbug"
 	"github.com/gorilla/mux"
 	"github.com/monoculum/formam"
-	"resenje.org/sessions/boltstore"
+	ab "github.com/gernest/authboss"
+	_ "github.com/gernest/authboss/register"
+	_ "github.com/gernest/authboss/auth"
+//	"github.com/justinas/alice"
 )
 
 const (
 	VERSION = "0.0.1"
 )
 
+func init() {
+	log.SetFlags(log.Lshortfile)
+}
+
+var funcs = template.FuncMap{
+	"formatDate": func(date time.Time) string {
+		return date.Format("2006/01/02 03:04pm")
+	},
+	"yield": func() string { return "" },
+}
+
 type Kesho struct {
 	AccountsBucket  string
 	Store           *Store
 	Assets          *Assets
 	Templ           *KTemplate
-	SessionStore    *boltstore.Store
+	SessStore    *BStore
 	SessionName     string
 	DefaultTemplate string // The default template for the whole site
 }
@@ -32,6 +50,8 @@ func (k *Kesho) Auth(w http.ResponseWriter, r *http.Request) {}
 func (k *Kesho) Routes() *mux.Router {
 	m := mux.NewRouter()
 	m.NotFoundHandler = http.HandlerFunc(k.NotFound)
+
+	m.PathPrefix("/auth").Handler(ab.NewRouter())
 
 	// Home page
 	m.HandleFunc("/", k.HomePage)
@@ -149,12 +169,12 @@ func (k *Kesho) AccountLogin(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		sess, err := k.SessionStore.New(r, k.SessionName)
+		sess, err := k.SessStore.New(r, k.SessionName)
 		if err != nil {
 			log.Println(err)
 		}
 		sess.Values["username"] = login.UserName
-		if err := k.SessionStore.Save(r, w, sess); err != nil {
+		if err := k.SessStore.Save(r, w, sess); err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -201,6 +221,55 @@ func (k *Kesho) NotFound(w http.ResponseWriter, r *http.Request) {
 
 func (k *Kesho) InternalProblem(w http.ResponseWriter) {}
 
+func (k *Kesho)Setup() {
+	database := AccountAuth{k.Store, k.AccountsBucket, "tokens_"}
+	ab.Cfg.Storer = database
+	ab.Cfg.OAuth2Storer = database
+	ab.Cfg.MountPath = "/auth"
+	ab.Cfg.ViewsPath = "ab_views"
+	ab.Cfg.LogWriter = os.Stdout
+	ab.Cfg.RootURL = `http://localhost:8080`
+
+	ab.Cfg.LayoutDataMaker = layoutData
+
+	b, err := ioutil.ReadFile(filepath.Join("views", "layout.html.tpl"))
+	if err != nil {
+		panic(err)
+	}
+	ab.Cfg.Layout = template.Must(template.New("layout").Funcs(funcs).Parse(string(b)))
+
+	ab.Cfg.XSRFName = "csrf_token"
+	ab.Cfg.XSRFMaker = func(_ http.ResponseWriter, r *http.Request) string {
+		return nosurf.Token(r)
+	}
+	ab.Cfg.PrimaryID="user_name"
+
+	ab.Cfg.Policies=[]ab.Validator{
+		ab.Rules{
+			FieldName:"user_name",
+			Required:true,
+			MinLength:5,
+			MaxLength:10,
+			AllowWhitespace:false,
+		},
+		ab.Rules{
+			FieldName:"password",
+			Required:true,
+			MinLength:8,
+			MaxLength:20,
+			AllowWhitespace:false,
+		},
+	}
+	ab.Cfg.ConfirmFields=[]string{"password", "confirm_password"}
+
+	ab.Cfg.CookieStoreMaker = NewCookieStorer
+	ab.Cfg.SessionStoreMaker = NewSessionStorer
+
+	if err := ab.Init(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func (k Kesho) Run() {
 	var (
 		httpPort = "8080"
@@ -210,15 +279,32 @@ func (k Kesho) Run() {
 	if err := k.Templ.LoadFromDB(); err != nil {
 		log.Fatal(err)
 	}
+
+	k.Setup()
+
 	log.Println("done")
 	log.Printf("Kesho is running at localhost:%s \n", httpPort)
 	addr := fmt.Sprintf(":%s", httpPort)
 
+	//	stack:=alice.New(nosurfing,ab.ExpireMiddleware).Then(k.Routes())
+
 	defer k.Store.Close()
+	log.Fatal(http.ListenAndServe(addr, k.Routes()))
 
-	smux := http.NewServeMux()
-	netbug.RegisterHandler("/profile", smux)
-	smux.Handle("/", k.Routes())
-	log.Fatal(http.ListenAndServe(addr, smux))
+}
 
+func layoutData(w http.ResponseWriter, r *http.Request) ab.HTMLData {
+	currentUserName := ""
+	userInter, err := ab.CurrentUser(w, r)
+	if userInter != nil && err == nil {
+		currentUserName = userInter.(*Account).UserName
+	}
+
+	return ab.HTMLData{
+		"loggedin":          userInter != nil,
+		"username":          "",
+		ab.FlashSuccessKey:  ab.FlashSuccess(w, r),
+		ab.FlashErrorKey:    ab.FlashError(w, r),
+		"current_user_name": currentUserName,
+	}
 }
