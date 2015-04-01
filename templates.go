@@ -12,6 +12,9 @@ import (
 	"strings"
 
 	"github.com/boltdb/bolt"
+	"github.com/gernest/authboss"
+
+	"regexp"
 )
 
 type KTemplate struct {
@@ -19,7 +22,8 @@ type KTemplate struct {
 	Bucket string
 	Assets *Assets
 
-	Cache map[string]*template.Template
+	AuthTempl map[string]*template.Template
+	Cache     map[string]*template.Template
 }
 
 type Config struct {
@@ -123,6 +127,20 @@ func (t *KTemplate) Load(name string) error {
 }
 func (t *KTemplate) loadTemplate(name []byte, bucket *bolt.Bucket) error {
 	var tmpl *template.Template
+	var layout *template.Template
+	var authTempl map[string][]byte
+	authTempl = make(map[string][]byte)
+
+	var funcMap = template.FuncMap{
+		"title": strings.Title,
+		"mountpathed": func(location string) string {
+			if authboss.Cfg.MountPath == "/" {
+				return location
+			}
+			return path.Join(authboss.Cfg.MountPath, location)
+		},
+	}
+
 	b := bucket.Bucket(name)
 	if b == nil {
 		return errors.New("kesho KTemplate.LoadToDB: No bucket for the templates found")
@@ -130,14 +148,40 @@ func (t *KTemplate) loadTemplate(name []byte, bucket *bolt.Bucket) error {
 
 	// Adopted from the templates package on the ParseFiles implementation
 	tmpl = template.New(string(name))
+
 	err := b.ForEach(func(k, v []byte) error {
 		var ntmpl *template.Template
 		ntmpl = tmpl.New(string(k))
+		re := regexp.MustCompile("^*[.]html.tpl$")
+		if re.Match(k) {
+			authTempl[string(k)] = v
+			return nil
+		}
 		_, terr := ntmpl.Parse(string(v))
 		return terr
 	})
 	if err != nil {
 		return err
+	}
+	if len(authTempl) > 0 {
+		layout = template.Must(template.New("layout").Funcs(funcs).Parse(string(authTempl["layout.html.tpl"])))
+		t.AuthTempl = make(map[string]*template.Template)
+		for k, v := range authTempl {
+			if k == "layout.html.tpl" {
+				continue
+			}
+			clone, err := layout.Clone()
+			if err != nil {
+				panic(err)
+			}
+
+			_, err = clone.New("authboss").Funcs(funcMap).Parse(string(v))
+			if err != nil {
+				panic(err)
+			}
+			t.AuthTempl[k] = clone
+		}
+		t.Cache[layout.Name()] = layout
 	}
 
 	//Add to cache

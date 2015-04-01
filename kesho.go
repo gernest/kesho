@@ -11,13 +11,11 @@ import (
 	"github.com/justinas/nosurf"
 	"github.com/monoculum/formam"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
-//	"github.com/justinas/alice"
+	//	"github.com/justinas/alice"
 )
 
 const (
@@ -226,18 +224,12 @@ func (k *Kesho) Setup() {
 	ab.Cfg.Storer = database
 	ab.Cfg.OAuth2Storer = database
 	ab.Cfg.MountPath = "/auth"
-	ab.Cfg.ViewsPath = "ab_views"
+	ab.Cfg.ViewsPath = ""
+	ab.Cfg.ResponseTmpl = k.Templ.AuthTempl
 	ab.Cfg.LogWriter = os.Stdout
 	ab.Cfg.RootURL = `http://localhost:8080`
 
 	ab.Cfg.LayoutDataMaker = layoutData
-
-	b, err := ioutil.ReadFile(filepath.Join("views", "layout.html.tpl"))
-	if err != nil {
-		panic(err)
-	}
-	ab.Cfg.Layout = template.Must(template.New("layout").Funcs(funcs).Parse(string(b)))
-
 	ab.Cfg.XSRFName = "csrf_token"
 	ab.Cfg.XSRFMaker = func(_ http.ResponseWriter, r *http.Request) string {
 		return nosurf.Token(r)
