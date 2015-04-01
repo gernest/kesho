@@ -10,7 +10,6 @@ const sessionCookieName = "kesho_"
 
 var sessionStore *BStore
 
-
 type SessionStorer struct {
     w http.ResponseWriter
     r *http.Request

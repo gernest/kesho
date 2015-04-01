@@ -3,20 +3,20 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"os"
-	"time"
-	"log"
-	"html/template"
-	"path/filepath"
-	"io/ioutil"
-	"net/http"
-	"github.com/justinas/nosurf"
 	"github.com/astaxie/beego/validation"
-	"github.com/gorilla/mux"
-	"github.com/monoculum/formam"
 	ab "github.com/gernest/authboss"
-	_ "github.com/gernest/authboss/register"
 	_ "github.com/gernest/authboss/auth"
+	_ "github.com/gernest/authboss/register"
+	"github.com/gorilla/mux"
+	"github.com/justinas/nosurf"
+	"github.com/monoculum/formam"
+	"html/template"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 //	"github.com/justinas/alice"
 )
 
@@ -40,7 +40,7 @@ type Kesho struct {
 	Store           *Store
 	Assets          *Assets
 	Templ           *KTemplate
-	SessStore    *BStore
+	SessStore       *BStore
 	SessionName     string
 	DefaultTemplate string // The default template for the whole site
 }
@@ -221,7 +221,7 @@ func (k *Kesho) NotFound(w http.ResponseWriter, r *http.Request) {
 
 func (k *Kesho) InternalProblem(w http.ResponseWriter) {}
 
-func (k *Kesho)Setup() {
+func (k *Kesho) Setup() {
 	database := AccountAuth{k.Store, k.AccountsBucket, "tokens_"}
 	ab.Cfg.Storer = database
 	ab.Cfg.OAuth2Storer = database
@@ -242,25 +242,25 @@ func (k *Kesho)Setup() {
 	ab.Cfg.XSRFMaker = func(_ http.ResponseWriter, r *http.Request) string {
 		return nosurf.Token(r)
 	}
-	ab.Cfg.PrimaryID="user_name"
+	ab.Cfg.PrimaryID = "user_name"
 
-	ab.Cfg.Policies=[]ab.Validator{
+	ab.Cfg.Policies = []ab.Validator{
 		ab.Rules{
-			FieldName:"user_name",
-			Required:true,
-			MinLength:5,
-			MaxLength:10,
-			AllowWhitespace:false,
+			FieldName:       "user_name",
+			Required:        true,
+			MinLength:       5,
+			MaxLength:       10,
+			AllowWhitespace: false,
 		},
 		ab.Rules{
-			FieldName:"password",
-			Required:true,
-			MinLength:8,
-			MaxLength:20,
-			AllowWhitespace:false,
+			FieldName:       "password",
+			Required:        true,
+			MinLength:       8,
+			MaxLength:       20,
+			AllowWhitespace: false,
 		},
 	}
-	ab.Cfg.ConfirmFields=[]string{"password", "confirm_password"}
+	ab.Cfg.ConfirmFields = []string{"password", "confirm_password"}
 
 	ab.Cfg.CookieStoreMaker = NewCookieStorer
 	ab.Cfg.SessionStoreMaker = NewSessionStorer

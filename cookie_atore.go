@@ -1,10 +1,11 @@
 package main
+
 import (
     "fmt"
-    "time"
-    "net/http"
-    "github.com/gorilla/securecookie"
     "github.com/gernest/authboss"
+    "github.com/gorilla/securecookie"
+    "net/http"
+    "time"
 )
 
 var cookieStore *securecookie.SecureCookie
