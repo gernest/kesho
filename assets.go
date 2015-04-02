@@ -157,3 +157,40 @@ func (ass *Assets) Get(key string) (*File, error) {
 	}
 	return file, nil
 }
+
+// Just Incase I want to support Range requests in the future
+//----------------------------------------------------------
+//-  Range Request and Etags stuffs  adopted from net/http
+//----------------------------------------------------------
+//func checkETag(w http.ResponseWriter,r *http.Request)(rangeReq string,done bool){
+//	etag:=w.Header().Get("Etag")
+//	rangeReq=getHeader("Range",r)
+//
+//	if ir:=getHeader("If-Range",r);ir!=""&&ir!=etag {
+//		rangeReq=""
+//	}
+//
+//	if inm:=getHeader("If-None-Match",r);inm!="" {
+//		if etag=="" {
+//			return rangeReq,false
+//		}
+//		if r.Method!="GET"&&r.Method!="HEAD" {
+//			return rangeReq,false
+//		}
+//		if inm == etag || inm == "*" {
+//			h := w.Header()
+//			delete(h, "Content-Type")
+//			delete(h, "Content-Length")
+//			w.WriteHeader(http.StatusNotModified)
+//			return "", true
+//		}
+//	}
+//	return rangeReq,false
+//}
+//
+//func getHeader(key string, r *http.Request) string{
+//	if v:=r.Header[key];len(v)>0 {
+//		return  v[0]
+//	}
+//	return ""
+//}
