@@ -5,13 +5,17 @@ import (
 	"io/ioutil"
 	"log"
 	"mime"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
+	"bytes"
 	"github.com/gorilla/mux"
+	"io"
 )
 
 type File struct {
@@ -19,6 +23,10 @@ type File struct {
 	Body      string    `json:"body"`
 	CreatedAt time.Time `json:"create_at"`
 	UpdatedAt time.Time `json:"update_at"`
+}
+
+func (f *File) Size() int64 {
+	return int64(len(f.Body))
 }
 
 type Assets struct {
@@ -106,19 +114,13 @@ func (ass *Assets) Serve(w http.ResponseWriter, r *http.Request) {
 
 // ServeContent Borrows heavily on `http.ServeContent`
 func (ass *Assets) ServeContent(w http.ResponseWriter, r *http.Request, file *File) {
-
-	// Checks for modified time header, this code is borrowed from the standard library
-	if t, err := time.Parse(http.TimeFormat, r.Header.Get("If-Modified-Since")); err == nil && file.UpdatedAt.Before(t.Add(1*time.Second)) {
-		h := w.Header()
-		delete(h, "Content-Type")
-		delete(h, "Content-Length")
-		w.WriteHeader(http.StatusNotModified)
+	if checkLastModified(w, r, file) {
 		return
 	}
-	w.Header().Set("Last-Modified", file.UpdatedAt.UTC().Format(http.TimeFormat))
-
-	// TODO: checks for Etag, and heck I have no idea what this thing is but i guess it is important.
-
+	rangeReq, done := checkETag(w, r)
+	if done {
+		return
+	}
 	code := http.StatusOK
 
 	ctypes, haveType := w.Header()["Content-Type"]
@@ -129,9 +131,75 @@ func (ass *Assets) ServeContent(w http.ResponseWriter, r *http.Request, file *Fi
 	} else if len(ctypes) > 0 {
 		ctype = ctypes[0]
 	}
+	size := file.Size()
+	sendSize := file.Size()
+	content := bytes.NewReader([]byte(file.Body))
+	var sendContent io.Reader = content
+	if size >= 0 {
+		ranges, err := parseRange(rangeReq, size)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusRequestedRangeNotSatisfiable)
+			return
+		}
+		if sumRangesSize(ranges) > size {
+			ranges = nil
+		}
+		switch {
+		case len(ranges) == 1:
+			ra := ranges[0]
+			if _, err := content.Seek(ra.start, os.SEEK_SET); err != nil {
+				http.Error(w, err.Error(), http.StatusRequestedRangeNotSatisfiable)
+				return
+			}
+			sendSize = ra.length
+			code = http.StatusPartialContent
+			w.Header().Set("Content-Range", ra.contentRange(size))
+		case len(ranges) > 1:
+			for _, ra := range ranges {
+				if ra.start > size {
+					http.Error(w, err.Error(), http.StatusRequestedRangeNotSatisfiable)
+					return
+				}
+			}
+			sendSize = rangesMIMESize(ranges, ctype, size)
+			code = http.StatusPartialContent
+
+			pr, pw := io.Pipe()
+			mw := multipart.NewWriter(pw)
+			w.Header().Set("Content-Type", "multipart/byteranges; boundary="+mw.Boundary())
+			sendContent = pr
+			defer pr.Close() // cause writing goroutine to fail and exit if CopyN doesn't finish.
+			go func() {
+				for _, ra := range ranges {
+					part, err := mw.CreatePart(ra.mimeHeader(ctype, size))
+					if err != nil {
+						pw.CloseWithError(err)
+						return
+					}
+					if _, err := content.Seek(ra.start, os.SEEK_SET); err != nil {
+						pw.CloseWithError(err)
+						return
+					}
+					if _, err := io.CopyN(part, content, ra.length); err != nil {
+						pw.CloseWithError(err)
+						return
+					}
+				}
+				mw.Close()
+				pw.Close()
+			}()
+		}
+
+		w.Header().Set("Accept-Ranges", "bytes")
+		if w.Header().Get("Content-Encoding") == "" {
+			w.Header().Set("Content-Length", strconv.FormatInt(sendSize, 10))
+		}
+
+	}
+
 	w.WriteHeader(code)
 	if r.Method != "HEAD" {
-		w.Write([]byte(file.Body))
+		io.CopyN(w, sendContent, sendSize)
 	}
 }
 
@@ -158,39 +226,51 @@ func (ass *Assets) Get(key string) (*File, error) {
 	return file, nil
 }
 
+func checkLastModified(w http.ResponseWriter, r *http.Request, file *File) bool {
+	if t, err := time.Parse(http.TimeFormat, r.Header.Get("If-Modified-Since")); err == nil && file.UpdatedAt.Before(t.Add(1*time.Second)) {
+		h := w.Header()
+		delete(h, "Content-Type")
+		delete(h, "Content-Length")
+		w.WriteHeader(http.StatusNotModified)
+		return true
+	}
+	w.Header().Set("Last-Modified", file.UpdatedAt.UTC().Format(http.TimeFormat))
+	return false
+}
+
 // Just Incase I want to support Range requests in the future
 //----------------------------------------------------------
 //-  Range Request and Etags stuffs  adopted from net/http
 //----------------------------------------------------------
-//func checkETag(w http.ResponseWriter,r *http.Request)(rangeReq string,done bool){
-//	etag:=w.Header().Get("Etag")
-//	rangeReq=getHeader("Range",r)
-//
-//	if ir:=getHeader("If-Range",r);ir!=""&&ir!=etag {
-//		rangeReq=""
-//	}
-//
-//	if inm:=getHeader("If-None-Match",r);inm!="" {
-//		if etag=="" {
-//			return rangeReq,false
-//		}
-//		if r.Method!="GET"&&r.Method!="HEAD" {
-//			return rangeReq,false
-//		}
-//		if inm == etag || inm == "*" {
-//			h := w.Header()
-//			delete(h, "Content-Type")
-//			delete(h, "Content-Length")
-//			w.WriteHeader(http.StatusNotModified)
-//			return "", true
-//		}
-//	}
-//	return rangeReq,false
-//}
-//
-//func getHeader(key string, r *http.Request) string{
-//	if v:=r.Header[key];len(v)>0 {
-//		return  v[0]
-//	}
-//	return ""
-//}
+func checkETag(w http.ResponseWriter, r *http.Request) (rangeReq string, done bool) {
+	etag := w.Header().Get("Etag")
+	rangeReq = getHeader("Range", r)
+
+	if ir := getHeader("If-Range", r); ir != "" && ir != etag {
+		rangeReq = ""
+	}
+
+	if inm := getHeader("If-None-Match", r); inm != "" {
+		if etag == "" {
+			return rangeReq, false
+		}
+		if r.Method != "GET" && r.Method != "HEAD" {
+			return rangeReq, false
+		}
+		if inm == etag || inm == "*" {
+			h := w.Header()
+			delete(h, "Content-Type")
+			delete(h, "Content-Length")
+			w.WriteHeader(http.StatusNotModified)
+			return "", true
+		}
+	}
+	return rangeReq, false
+}
+
+func getHeader(key string, r *http.Request) string {
+	if v := r.Header[key]; len(v) > 0 {
+		return v[0]
+	}
+	return ""
+}
