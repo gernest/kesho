@@ -11,39 +11,37 @@
 
     <script src="/static/js/zepto.min.js"></script>
 </head>
-<body class="container-fluid" style="padding-top: 15px;">
-	<nav class="navbar navbar-default">
-		<div class="container-fluid">
-			<div class="navbar-header">
-				<a class="navbar-brand" href="/">Auth-Blog</a>
-			</div>
+<body>
+<header class="masthead">
+	<div class="container">
+		<a href="/" class="masthead-logo">
+			<span class="mega-octicon octicon-package"></span>
+			kesho
+		</a>
 
-			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-				<ul class="nav navbar-nav navbar-right">
-					{{if not .loggedin}}
-					<li><a href="/auth/register">Register</a></li>
-					<li><a href="/auth/login"><i class="fa fa-sign-in"></i> Login</a></li>
-					{{else}}
-					<li class="dropdown">
-						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Welcome {{.current_user_name}}! <span class="caret"></span></a>
-						<ul class="dropdown-menu" role="menu">
-							<li>
-								<a href="/auth/logout">
-									<i class="fa fa-sign-out"></i> Logout
-								</a>
-							</li>
-						</ul>
-					</li>
-					{{end}}
-				</ul>
-			</div>
-		</div>
-	</nav>
+		<nav class="masthead-nav">
+			<a href="/"><i class="icono-home"></i> </a>
+			{{if not .loggedin}}
+			<a href="/auth/register">Register</a>
+			<a href="/auth/login"><i class="fa fa-sign-in"></i> Login</a>
+			{{else}}
 
-	{{with .flash_success}}<div class="alert alert-success">{{.}}</div>{{end}}
-	{{with .flash_error}}<div class="alert alert-danger">{{.}}</div>{{end}}
-	{{template "yield" .}}
-	{{template "authboss" .}}
+						<a href="/auth/logout">
+							<i class="fa fa-sign-out"></i> Logout
+						</a>
+			{{end}}
+		</nav>
+	</div>
+</header>
+
+<div class="container">
+	<div class="colums docs-layout">
+			{{with .flash_success}}<div class="alert alert-success">{{.}}</div>{{end}}
+			{{with .flash_error}}<div class="alert alert-danger">{{.}}</div>{{end}}
+			{{template "yield" .}}
+			{{template "authboss" .}}
+	</div>
+</div>
 </body>
 </html>
 {{define "pagetitle"}}{{end}}
