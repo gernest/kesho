@@ -2,7 +2,11 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title>home</title>
+    {{ if .Title }}
+    <title>{{ .Title }}</title>
+    {{ else }}
+    <title>kesho: Blogu yako</title>
+    {{ end }}
     <link href="/static/css/icono.min.css" rel="stylesheet">
     <link href="/static/css/docs.css" rel="stylesheet">
     <link href="/static/css/kesho.css" rel="stylesheet">
@@ -18,6 +22,7 @@
 
         <nav class="masthead-nav">
             <a href="/"><i class="icono-home"></i> </a>
+            <a href="/accounts">akaunti</a>
             <a href="/auth/register?redir=/accounts">jiunge</a>
             <a href="/auth/login?redir=/accounts">ingia</a>
         </nav>

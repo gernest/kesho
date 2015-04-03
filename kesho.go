@@ -3,19 +3,17 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/astaxie/beego/validation"
 	ab "github.com/gernest/authboss"
 	_ "github.com/gernest/authboss/auth"
 	_ "github.com/gernest/authboss/register"
 	"github.com/gorilla/mux"
+	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
-	"github.com/monoculum/formam"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"time"
-	//	"github.com/justinas/alice"
 )
 
 const (
@@ -59,10 +57,6 @@ func (k *Kesho) Routes() *mux.Router {
 
 	// Accounts
 	m.HandleFunc("/accounts", k.AccountHome)
-	m.HandleFunc("/accounts/create", k.AccountCreate)
-	m.HandleFunc("/accounts/login", k.AccountLogin)
-	m.HandleFunc("/accounts/delete/{username}", k.AccountDelete)
-	m.HandleFunc("/accounts/update/{username}", k.AccountUpdate)
 
 	// Posts
 	m.HandleFunc("/post/create/", k.PostCreate)
@@ -90,94 +84,10 @@ func (k *Kesho) HomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 // Accounts
-func (k *Kesho) AccountHome(w http.ResponseWriter, r *http.Request) {}
-
-func (k *Kesho) AccountCreate(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		k.RenderDefaultView(w, "accounts/new.html", nil)
-		return
-	} else if r.Method == "POST" {
-		user := NewAccount(k.AccountsBucket, k.Store)
-		valid := &validation.Validation{}
-		data := make(map[string]interface{})
-		m := make(map[string]string)
-		r.ParseForm()
-
-		if err := formam.Decode(r.Form, user); err != nil {
-			m["Some Fish"] = err.Error()
-			data["errors"] = m
-			k.RenderDefaultView(w, "accounts/new.html", data)
-			return
-		}
-		b, err := valid.Valid(user)
-		if err != nil || !b {
-			for k, v := range valid.ErrorsMap {
-				m[k] = v.Message
-			}
-			data["errors"] = m
-			k.RenderDefaultView(w, "accounts/new.html", data)
-			return
-		}
-		if user.IsUser() {
-			m["Some Fish"] = "The name of the blog has already been taken"
-			data["errors"] = m
-			k.RenderDefaultView(w, "accounts/new.html", data)
-			return
-		}
-		if err := user.CreateUser(); err != nil {
-			m["Some Fish"] = err.Error()
-			data["errors"] = m
-			k.RenderDefaultView(w, "accounts/new.html", data)
-			return
-		}
-		http.Redirect(w, r, "/accounts/login", http.StatusFound)
-		return
-	}
-}
-
-func (k *Kesho) AccountUpdate(w http.ResponseWriter, r *http.Request) {}
-
-func (k *Kesho) AccountDelete(w http.ResponseWriter, r *http.Request) {}
-
-func (k *Kesho) AccountLogin(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		k.RenderDefaultView(w, "accounts/login.html", nil)
-		return
-	} else if r.Method == "POST" {
-		login := NewAccount(k.AccountsBucket, k.Store)
-		valid := &validation.Validation{}
-		r.ParseForm()
-		if err := formam.Decode(r.Form, login); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		b, err := valid.Valid(login)
-		if err != nil || !b {
-			log.Println(valid.ErrorsMap)
-			data := make(map[string]interface{})
-			m := make(map[string]string)
-			for k, v := range valid.ErrorsMap {
-				m[k] = v.Message
-			}
-			data["errors"] = m
-			k.RenderDefaultView(w, "accounts/login.html", data)
-			return
-		}
-		if err = login.login(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		sess, err := k.SessStore.New(r, k.SessionName)
-		if err != nil {
-			log.Println(err)
-		}
-		sess.Values["username"] = login.UserName
-		if err := k.SessStore.Save(r, w, sess); err != nil {
-			log.Println(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
+func (k *Kesho) AccountHome(w http.ResponseWriter, r *http.Request) {
+	data := make(map[string]interface{})
+	data["Title"] = "Account"
+	k.RenderDefaultView(w, "accounts/index.html", data)
 }
 
 // Posts
@@ -278,10 +188,10 @@ func (k Kesho) Run() {
 	log.Printf("Kesho is running at localhost:%s \n", httpPort)
 	addr := fmt.Sprintf(":%s", httpPort)
 
-	//	stack:=alice.New(nosurfing,ab.ExpireMiddleware).Then(k.Routes())
+	stack := alice.New(nosurfing, ab.ExpireMiddleware).Then(k.Routes())
 
 	defer k.Store.Close()
-	log.Fatal(http.ListenAndServe(addr, k.Routes()))
+	log.Fatal(http.ListenAndServe(addr, stack))
 
 }
 

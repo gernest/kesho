@@ -1,21 +1,65 @@
-{{ template "partials/header.html"}}
-<div class="four-fifths  column">
-    <form id="regForm" action="/accounts/create" method="POST">
-        <div class="input-group">
-            <label for="name">Jina la blogu yako</label>
-            <input id="regBlogName" type="text" name="UserName" placeholder="Andika jina ya blogu mfano kesho">
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    {{ if .Title }}
+    <title>{{ .Title }}</title>
+    {{ else }}
+    <title>kesho: Blogu yako</title>
+    {{ end }}
+    <link href="/static/css/icono.min.css" rel="stylesheet">
+    <link href="/static/css/docs.css" rel="stylesheet">
+    <link href="/static/css/editor.css" rel="stylesheet">
+    <link href="/static/css/html5tooltips.css" rel="stylesheet">
+    <link href="/static/css/html5tooltips.animation.css" rel="stylesheet">
+
+    <script src="/static/js/zepto.min.js"></script>
+    <script src="/static/js/marked.js"></script>
+    <script src="/static/js/editor.js"></script>
+    <script src="/static/js/html5tooltips.js"></script>
+    <script src="/static/js/kesho_editor.js"></script>
+    <style type="text/css">
+        .editor-wrapper {
+        max-width: 680px;
+        padding: 10px;
+        margin: 60px auto;
+        }
+        .send-btn{
+        margin-bottom:4px;
+        }
+    </style>
+</head>
+<body>
+<header class="masthead">
+    <div class="container">
+        <a href="/" class="masthead-logo">
+            <span class="mega-octicon octicon-package"></span>
+            kesho
+        </a>
+
+        <nav class="masthead-nav">
+            <a href="/"><i class="icono-home"></i> </a>
+            <a href="/auth/register?redir=/accounts">jiunge</a>
+            <a href="/auth/login?redir=/accounts">ingia</a>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+    <div class="colums docs-layout">
+        <div class="three-fourths column">
+            <div class="editor-wrapper">
+                <form>
+                    <div class="send-btn">
+                        <button class="btn btn-primary btn-block" type="submit">TUMA</button>
+                    </div>
+                    <input class="title" type="text" placeholder="Kichwa cha habari ..."/>
+                    <textarea id="editor" placeholder="Andika makala yako hapa."></textarea>
+                </form>
+            </div>
         </div>
-        <div class="input-group">
-            <label for="password">Namaba yako ya siri</label>
-            <input id="regPassword" type="password" name="Password" placeholder="kuanzia herufi 8 au zaidi...">
-        </div>
-        <div class="input-group">
-            <label for="password">Rudia namba ya siri</label>
-            <input id="regConfirmPass" type="password" name="ConfirmPassword" placeholder="rudia namba ya siri...">
-        </div>
-        <div class="input-group">
-            <input id="regSubmit" type="submit" value="Tengeneza Akaunti" class="btn btn-primary">
-        </div>
-    </form>
+    </div>
 </div>
-{{ template "partials/footer.html"}}
+
+</body>
+</html>

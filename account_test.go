@@ -26,7 +26,7 @@ func TestAccount_All(t *testing.T) {
 		usr.Password = v.Password
 		usr.ConfirmPassword = v.Password
 
-		err := usr.CreateUser()
+		err := usr.StampAndSave()
 		if err != nil {
 			t.Error(err)
 		}
@@ -39,10 +39,6 @@ func TestAccount_All(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if !usr.IsValidPassword(v.Password) {
-			t.Errorf("Expected passwords to match")
-		}
-
 		usr.Template = "kesho"
 		err = usr.Update()
 		if err != nil {
