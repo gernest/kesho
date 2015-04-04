@@ -1,0 +1,9 @@
+{{ template "partials/post_header.html" .}}
+<div class="container">
+    <div class="columns docs-columns">
+        <div class="three-fourths column">
+            {{ .post.Body }}
+        </div>
+    </div>
+</div>
+{{ template "partials/post_footer.html"}}

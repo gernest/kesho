@@ -43,7 +43,6 @@ type Kesho struct {
 	DefaultTemplate string // The default template for the whole site
 }
 
-func (k *Kesho) Auth(w http.ResponseWriter, r *http.Request) {}
 
 // Our HomePage
 func (k *Kesho) HomePage(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +163,36 @@ func (k *Kesho) Version(w http.ResponseWriter, r *http.Request) {
 
 // Views
 func (k *Kesho) ViewHome(w http.ResponseWriter, r *http.Request)    {}
-func (k *Kesho) ViewPost(w http.ResponseWriter, r *http.Request)    {}
+func (k *Kesho) ViewPost(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	uname := vars["username"]
+	if uname=="" {
+		k.NotFound(w, r)
+		return
+	}
+	pslug := vars["slug"]
+	if pslug=="" {
+		k.NotFound(w, r)
+		return
+	}
+	user := NewAccount(k.AccountsBucket, k.Store)
+	user.UserName=uname
+	if err := user.Get(); err!=nil {
+		k.ServerProblem(w, err.Error())
+		return
+	}
+	post := new(Post)
+	post.Slug=pslug
+	post.Account=user
+	if err := post.Get(); err!=nil {
+		k.ServerProblem(w, err.Error())
+		return
+	}
+	data := NewHtmlData()
+	data.Set("user", user)
+	data.Set("post", post)
+	k.RenderDefaultView(w, "post/post.html", data.Data())
+}
 func (k *Kesho) ViewSubHome(w http.ResponseWriter, r *http.Request) {}
 func (k *Kesho) ViewSubPost(w http.ResponseWriter, r *http.Request) {}
 
@@ -173,6 +201,7 @@ func (k *Kesho) RenderDefaultView(w http.ResponseWriter, name string, data inter
 	err := k.Templ.Render(out, k.DefaultTemplate, name, data)
 
 	if err != nil {
+		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

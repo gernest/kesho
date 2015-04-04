@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>
+        {{ .post.Author }}:{{.post.Title }}
+    </title>
+    <link href="/static/css/icono.min.css" rel="stylesheet">
+    <link href="/static/css/docs.css" rel="stylesheet">
+    <link href="/static/css/kesho.css" rel="stylesheet">
+    <script src="/static/js/zepto.min.js"></script>
+</head>
+<body>
+<header class="masthead">
+    <div class="container">
+        <a href="/" class="masthead-logo">
+            <span class="mega-octicon octicon-package"></span>
+            <span>{{ .post.Author }}</span><span>Blog</span>
+        </a>
+    </div>
+</header>
+<div class="jumbotron">
+    <div class="container">
+        <h1>{{ .post.Title }}</h1>
+    </div>
+</div>
