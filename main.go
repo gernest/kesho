@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 )
 
@@ -20,15 +19,13 @@ func main() {
 		secretKey       = "892252c6eade0b4ebf32d94aaed79d20"
 		secretValue     = "9451243db34445f4dbf86e0b13bec94d"
 	)
-	cookieStore = securecookie.New([]byte(secretKey), []byte(secretValue))
-
 	cleanDB(mainDB)
 
 	mainStore = NewStore(mainDB, 0600, nil)
 
 	// Setup session store
 	opts := &sessions.Options{MaxAge: 86400 * 30, Path: "/"}
-	ss, err := NewBStoreFromDB(mainStore.db, sessionBucket, 100, opts, []byte("secret"))
+	ss, err := NewBStoreFromDB(mainStore.db, sessionBucket, 100, opts, []byte(secretKey), []byte(secretValue))
 	if err != nil {
 		log.Panic(err)
 	}

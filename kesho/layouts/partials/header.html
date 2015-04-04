@@ -22,9 +22,14 @@
 
         <nav class="masthead-nav">
             <a href="/"><i class="icono-home"></i> </a>
+            {{ if .loggedIn }}
+            <a href="/accounts">akaunti</a>
+            <a href="/auth/logout">akaunti</a>
+            {{ else }}
             <a href="/accounts">akaunti</a>
             <a href="/auth/register?redir=/accounts">jiunge</a>
             <a href="/auth/login?redir=/accounts">ingia</a>
+            {{ end }}
         </nav>
     </div>
 </header>

@@ -65,22 +65,13 @@
                     <div class="send-btn">
                         <button class="btn btn-primary btn-block" type="submit">TUMA</button>
                     </div>
-                    <input class="title" type="text" name="Title" placeholder="Kichwa cha habari ..."/>
-                    <textarea name="Body" id="editor" placeholder="Andika makala yako hapa."></textarea>
+                    <input class="title" type="text" name="Title" value="{{ .post.Title }}"/>
+                    <textarea name="Body" id="editor" placeholder="Andika makala yako hapa.">{{ .post.Body }}</textarea>
                 </form>
             </div>
         </div>
         <div class="one-fourth column">
             <nav class="menu docs-menu">
-                <div class="menu-item selected" href="/scaffolding/">
-                    My posts
-                </div>
-                {{if .post }}
-                <div class="menu-item">
-                    <h4>{{ .post.Title }}</h4>
-                    <a href="/post/update/{{.post.Slug }}"><i class="icono-document"></i> </a>
-                </div>
-                {{ end }}
             </nav>
         </div>
     </div>

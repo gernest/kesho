@@ -6,9 +6,11 @@ import (
 	ab "github.com/gernest/authboss"
 	_ "github.com/gernest/authboss/auth"
 	_ "github.com/gernest/authboss/register"
+	_ "github.com/gernest/authboss/remember"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
+	"github.com/monoculum/formam"
 	"html/template"
 	"log"
 	"net/http"
@@ -43,40 +45,6 @@ type Kesho struct {
 
 func (k *Kesho) Auth(w http.ResponseWriter, r *http.Request) {}
 
-func (k *Kesho) Routes() *mux.Router {
-	m := mux.NewRouter()
-	m.NotFoundHandler = http.HandlerFunc(k.NotFound)
-
-	m.PathPrefix("/auth").Handler(ab.NewRouter())
-
-	// Home page
-	m.HandleFunc("/", k.HomePage)
-
-	// Static Assets
-	m.HandleFunc("/static/{filename:.*}", k.Assets.Serve)
-
-	// Accounts
-	m.HandleFunc("/accounts", k.AccountHome)
-
-	// Posts
-	m.HandleFunc("/post/create/", k.PostCreate)
-	m.HandleFunc("/post/delete/{slug}/", k.PostDelete)
-	m.HandleFunc("/post/update/{slug}", k.PostUpdate)
-	m.HandleFunc("/post/view/{slug}/", k.PostView)
-
-	// Version
-	m.HandleFunc("/version", k.Version)
-	// Views
-	m.HandleFunc("/{username}", k.ViewHome)
-	m.HandleFunc("/{username}/{slug}", k.ViewPost)
-
-	// Subdomain View
-	s := m.Host("{subdomain:[a-z]+}.domain.com").Subrouter()
-	s.HandleFunc("/", k.ViewSubHome)
-	s.HandleFunc("/{slug}", k.ViewSubPost)
-	return m
-}
-
 // Our HomePage
 func (k *Kesho) HomePage(w http.ResponseWriter, r *http.Request) {
 	k.RenderDefaultView(w, "index.html", nil)
@@ -85,15 +53,104 @@ func (k *Kesho) HomePage(w http.ResponseWriter, r *http.Request) {
 
 // Accounts
 func (k *Kesho) AccountHome(w http.ResponseWriter, r *http.Request) {
-	data := make(map[string]interface{})
-	data["Title"] = "Account"
-	k.RenderDefaultView(w, "accounts/index.html", data)
+	currentUsr, err := ab.CurrentUser(w, r)
+	if err != nil {
+		k.ServerProblem(w, err.Error())
+		return
+	}
+	if currentUsr == nil {
+		http.Redirect(w, r, "/auth/login", http.StatusFound)
+		return
+	}
+	usr := currentUsr.(*Account)
+
+	data := NewHtmlData()
+	data.Set("Title", "Account")
+	data.SetUser(usr)
+	data.StausLogged()
+	k.RenderDefaultView(w, "accounts/index.html", data.Data())
 }
 
 // Posts
-func (k *Kesho) PostCreate(w http.ResponseWriter, r *http.Request) {}
+func (k *Kesho) PostCreate(w http.ResponseWriter, r *http.Request) {
+	log.Println("Creating new post")
+	currentUsr, err := ab.CurrentUser(w, r)
+	if err != nil {
+		k.ServerProblem(w, err.Error())
+		return
+	}
+	if currentUsr == nil {
+		http.Redirect(w, r, "/auth/login", http.StatusFound)
+		return
+	}
+	usr := currentUsr.(*Account)
+	data := NewHtmlData()
 
-func (k *Kesho) PostUpdate(w http.ResponseWriter, r *http.Request) {}
+	r.ParseForm()
+	post := new(Post)
+	if err = formam.Decode(r.Form, post); err != nil {
+		k.ServerProblem(w, err.Error())
+		return
+	}
+	post.Account = usr
+	err = post.Create()
+	if err != nil {
+		k.ServerProblem(w, err.Error())
+		return
+	}
+	data.SetSafe("Title", usr.UserName)
+	data.Set("post", post)
+	data.FlashSuccess(post.Title + " imepokelewa na kutangazwa")
+	k.RenderDefaultView(w, "accounts/index.html", data.Data())
+}
+
+func (k *Kesho) PostUpdate(w http.ResponseWriter, r *http.Request) {
+	currentUsr, err := ab.CurrentUser(w, r)
+	if err != nil {
+		k.ServerProblem(w, err.Error())
+		return
+	}
+	if currentUsr == nil {
+		http.Redirect(w, r, "/auth/login", http.StatusFound)
+		return
+	}
+
+	vars := mux.Vars(r)
+	postSlug := vars["slug"]
+	if postSlug == "" {
+		k.NotFound(w, r)
+		return
+	}
+	usr := currentUsr.(*Account)
+	post := new(Post)
+	post.Account = usr
+	post.Slug = postSlug
+	err = post.Get()
+	if err != nil {
+		k.ServerProblem(w, err.Error())
+		return
+	}
+	data := NewHtmlData()
+	data.Set("Title", post.Title)
+	data.SetUser(usr)
+	data.StausLogged()
+	data.Set("post", post)
+	if r.Method == "POST" {
+		r.ParseForm()
+		if err = formam.Decode(r.Form, post); err != nil {
+			k.ServerProblem(w, err.Error())
+			return
+		}
+		if err = post.Update(); err != nil {
+			k.ServerProblem(w, err.Error())
+			return
+		}
+		data.FlashSuccess("Updated " + post.Title)
+		k.RenderDefaultView(w, "accounts/index.html", data.Data())
+		return
+	}
+	k.RenderDefaultView(w, "post/update.html", data.Data())
+}
 
 func (k *Kesho) PostDelete(w http.ResponseWriter, r *http.Request) {}
 
@@ -122,13 +179,6 @@ func (k *Kesho) RenderDefaultView(w http.ResponseWriter, name string, data inter
 	w.Write(out.Bytes())
 }
 
-func (k *Kesho) NotFound(w http.ResponseWriter, r *http.Request) {
-	k.RenderDefaultView(w, "404.html", nil)
-	return
-}
-
-func (k *Kesho) InternalProblem(w http.ResponseWriter) {}
-
 func (k *Kesho) Setup() {
 	database := AccountAuth{k.Store, k.AccountsBucket, "tokens_"}
 	ab.Cfg.Storer = database
@@ -139,7 +189,7 @@ func (k *Kesho) Setup() {
 	ab.Cfg.LogWriter = os.Stdout
 	ab.Cfg.RootURL = `http://localhost:8080`
 
-	ab.Cfg.LayoutDataMaker = layoutData
+	ab.Cfg.LayoutDataMaker = k.AuthlayoutData
 	ab.Cfg.XSRFName = "csrf_token"
 	ab.Cfg.XSRFMaker = func(_ http.ResponseWriter, r *http.Request) string {
 		return nosurf.Token(r)
@@ -164,7 +214,7 @@ func (k *Kesho) Setup() {
 	}
 	ab.Cfg.ConfirmFields = []string{"password", "confirm_password"}
 
-	ab.Cfg.CookieStoreMaker = NewCookieStorer
+	ab.Cfg.CookieStoreMaker = NewSessionStorer
 	ab.Cfg.SessionStoreMaker = NewSessionStorer
 
 	if err := ab.Init(); err != nil {
@@ -181,32 +231,15 @@ func (k Kesho) Run() {
 	if err := k.Templ.LoadFromDB(); err != nil {
 		log.Fatal(err)
 	}
-
 	k.Setup()
 
 	log.Println("done")
 	log.Printf("Kesho is running at localhost:%s \n", httpPort)
 	addr := fmt.Sprintf(":%s", httpPort)
 
-	stack := alice.New(nosurfing, ab.ExpireMiddleware).Then(k.Routes())
+	stack := alice.New(ab.ExpireMiddleware).Then(k.Routes())
 
 	defer k.Store.Close()
 	log.Fatal(http.ListenAndServe(addr, stack))
 
-}
-
-func layoutData(w http.ResponseWriter, r *http.Request) ab.HTMLData {
-	currentUserName := ""
-	userInter, err := ab.CurrentUser(w, r)
-	if userInter != nil && err == nil {
-		currentUserName = userInter.(*Account).UserName
-	}
-
-	return ab.HTMLData{
-		"loggedin":          userInter != nil,
-		"username":          "",
-		ab.FlashSuccessKey:  ab.FlashSuccess(w, r),
-		ab.FlashErrorKey:    ab.FlashError(w, r),
-		"current_user_name": currentUserName,
-	}
 }

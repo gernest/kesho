@@ -17,7 +17,6 @@ func (a AccountAuth) Create(key string, attr authboss.Attributes) error {
 		log.Panicln(err)
 		return err
 	}
-	log.Println("Creating user")
 	user.Store = a.Store
 	user.Bucket = a.AccountBucket
 	return user.StampAndSave()

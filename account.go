@@ -2,17 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
-	"log"
 	"time"
 
-	"bytes"
-
 	"github.com/boltdb/bolt"
-)
-
-const (
-	PASSWORD_HASHCOST = 8
 )
 
 type Account struct {
@@ -144,11 +136,11 @@ func (acc *Account) deleteUser(name string) error {
 }
 
 func (acc *Account) GetAllUsers() (result []*Account, err error) {
-	usrs, err := getAllUsers(acc)
-	if err != nil {
-		return
+	result = nil
+	if acc.Store.GetAll(acc.Bucket).Error != nil {
+		return nil, acc.Store.Error
 	}
-	for _, v := range usrs {
+	for _, v := range acc.Store.DataList {
 		user := NewAccount(acc.Bucket, acc.Store)
 		err = json.Unmarshal(v, user)
 		if err != nil {
@@ -158,34 +150,4 @@ func (acc *Account) GetAllUsers() (result []*Account, err error) {
 	}
 
 	return
-}
-func getAllUsers(acc *Account) ([][]byte, error) {
-	var resultB [][]byte
-	resultB = nil
-	buf := new(bytes.Buffer)
-
-	var safeUnmarshal = func(value []byte) error {
-		buf.Reset()
-		_, wrr := buf.Write(value)
-		if wrr != nil {
-			return wrr
-		}
-		resultB = append(resultB, buf.Bytes())
-		log.Println(resultB)
-		return nil
-	}
-
-	err := acc.Store.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(acc.Bucket))
-		if b == nil {
-			return errors.New("Bucket " + acc.Bucket + "not found")
-		}
-		return b.ForEach(func(k, v []byte) error {
-			log.Printf("Writing %s", k)
-			return safeUnmarshal(v)
-		})
-	})
-
-	return resultB, err
-
 }
