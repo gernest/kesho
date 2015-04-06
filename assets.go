@@ -110,7 +110,7 @@ func (ass *Assets) Serve(w http.ResponseWriter, r *http.Request) {
 
 	file, err := ass.Get(filename)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 	ass.ServeContent(w, r, file)

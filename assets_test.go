@@ -1,7 +1,10 @@
 package main
 
 import (
+	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -36,13 +39,34 @@ func TestAssets(t *testing.T) {
 		})
 
 		Convey("Retrieve some assets", func() {
-			n := "web/config.json"
-			ass.Save(n, "web")
 
-			f, err := ass.Get("config.json")
+			Convey("With a valid file", func() {
+				n := "web/config.json"
+				ass.Save(n, "web")
 
-			So(err, ShouldBeNil)
-			So(f.Name, ShouldEqual, "config.json")
+				f, err := ass.Get("config.json")
+
+				So(err, ShouldBeNil)
+				So(f.Name, ShouldEqual, "config.json")
+			})
+			Convey("With a file not in stored", func() {
+				f, err := ass.Get("kemi.json")
+
+				So(err, ShouldNotBeNil)
+				So(f, ShouldBeNil)
+			})
+			Convey("With absolute path", func() {
+				f, err := ass.Get("/config.json")
+
+				So(err, ShouldBeNil)
+				So(f.Name, ShouldEqual, "config.json")
+			})
+			Convey("With absolute path and wrong file", func() {
+				f, err := ass.Get("/kemi.json")
+
+				So(err, ShouldNotBeNil)
+				So(f, ShouldBeNil)
+			})
 
 		})
 		Convey("Delet Asset", func() {
@@ -63,6 +87,24 @@ func TestAssets(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(file.Name, ShouldEqual, "docs.css")
+		})
+		Convey("Serving assets", func() {
+			m := mux.NewRouter()
+			m.HandleFunc("/static/{filename:.*}", ass.Serve).Methods("GET")
+			w := httptest.NewRecorder()
+			Convey("Present files", func() {
+				r, _ := http.NewRequest("GET", "/static/css/docs.css", nil)
+
+				m.ServeHTTP(w, r)
+				So(w.Code, ShouldEqual, http.StatusOK)
+			})
+
+			Convey("File not current stores", func() {
+				r, _ := http.NewRequest("GET", "/static/css/horses.css", nil)
+
+				m.ServeHTTP(w, r)
+				So(w.Code, ShouldEqual, http.StatusNotFound)
+			})
 		})
 	})
 }
