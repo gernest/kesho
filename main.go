@@ -31,11 +31,13 @@ func main() {
 	}
 	sessionStore = ss
 
+	mainStorage := NewStorage(mainDB, 0600)
+
 	// Main app
 	app := &Kesho{
-		Assets: &Assets{Bucket: assetsBucket, Store: NewStorage(mainDB, 0600)},
+		Assets: &Assets{Bucket: assetsBucket, Store: mainStorage},
 		Templ: &KTemplate{
-			Store:  mainStore,
+			Store:  mainStorage,
 			Bucket: templatesBucket,
 			Cache:  make(map[string]*template.Template),
 		},

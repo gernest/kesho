@@ -1,4 +1,4 @@
--timeout=10s
+-timeout=60s
 -covermode=count
 -coverpkg=github.com/gernest/kesho
 

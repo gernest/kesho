@@ -256,7 +256,7 @@ func (k Kesho) Run() {
 	)
 	log.Println("Starting kesho ...")
 	log.Println("Loading templates...")
-	if err := k.Templ.LoadFromDB(); err != nil {
+	if err := k.Templ.LoadEm(); err != nil {
 		log.Fatal(err)
 	}
 	k.Setup()

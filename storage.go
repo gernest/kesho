@@ -76,8 +76,8 @@ func createDataRecord(s Storage, bucket, key string, value []byte, nested ...str
 		}
 		return nil
 	})
-	if s.Error!=nil {
-		s.Data=nil   // Make sure no previous data is reurned
+	if s.Error != nil {
+		s.Data = nil // Make sure no previous data is reurned
 	}
 	return s
 }
@@ -99,13 +99,13 @@ func getDataRecord(s Storage, bucket, key string, value []byte, buckets ...strin
 				s.Data = make([]byte, len(res))
 				copy(s.Data, res)
 			}
-			if res==nil {
+			if res == nil {
 				return errors.New("Record not found")
 			}
 			return nil
 		})
-		if s.Error!=nil {
-			s.Data=nil
+		if s.Error != nil {
+			s.Data = nil
 		}
 		return s
 	}
@@ -136,8 +136,8 @@ func getDataRecord(s Storage, bucket, key string, value []byte, buckets ...strin
 		copy(s.Data, rst)
 		return nil
 	})
-	if s.Error!=nil {
-		s.Data=nil   // Make sure no previous data is reurned
+	if s.Error != nil {
+		s.Data = nil // Make sure no previous data is reurned
 	}
 	return s
 }
@@ -155,14 +155,14 @@ func updateDataRecord(s Storage, bucket, key string, value []byte, nested ...str
 				return bolt.ErrBucketNotFound
 			}
 			gkey := b.Get([]byte(key))
-			if gkey==nil {
+			if gkey == nil {
 				return errors.New("Record Not Found")
 			}
 			return b.Put([]byte(key), value)
 		})
-		s.Data=value
-		if s.Error!=nil {
-			s.Data=nil
+		s.Data = value
+		if s.Error != nil {
+			s.Data = nil
 		}
 		return s
 	}
@@ -185,14 +185,14 @@ func updateDataRecord(s Storage, bucket, key string, value []byte, nested ...str
 			return uerr
 		}
 		gkey := prev.Get([]byte(key))
-		if gkey==nil {
+		if gkey == nil {
 			return errors.New("Record not Found")
 		}
 		return prev.Put([]byte(key), value)
 	})
-	s.Data=value
-	if s.Error!=nil {
-		s.Data=nil
+	s.Data = value
+	if s.Error != nil {
+		s.Data = nil
 	}
 	return s
 }
@@ -252,8 +252,8 @@ func getAll(s Storage, bucket, key string, value []byte, nested ...string) Stora
 		}
 		return nil
 	})
-	if s.Error!=nil {
-		s.Data=nil   // Make sure no previous data is reurned
+	if s.Error != nil {
+		s.Data = nil // Make sure no previous data is reurned
 	}
 	return s
 }
@@ -301,8 +301,8 @@ func removeDataRecord(s Storage, bucket, key string, value []byte, nested ...str
 		return nil
 
 	})
-	if s.Error!=nil {
-		s.Data=nil   // Make sure no previous data is reurned
+	if s.Error != nil {
+		s.Data = nil // Make sure no previous data is reurned
 	}
 	return s
 }

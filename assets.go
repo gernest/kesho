@@ -96,7 +96,6 @@ func (ass *Assets) loadDir(dir string) {
 			if serr != nil {
 				log.Println(err)
 			}
-			log.Println(file, "--loaded")
 			wg.Done()
 		}(path, dir, wg)
 		return nil

@@ -49,7 +49,6 @@ func TestStorage(t *testing.T) {
 					g2 := n.GetDataRecord("base", "record2", list2...)
 					g3 := n.GetDataRecord("base", "record2", list3...)
 
-
 					So(g1.Error, ShouldNotBeNil)
 					So(g1.Data, ShouldBeNil)
 
@@ -82,7 +81,6 @@ func TestStorage(t *testing.T) {
 				})
 
 			})
-
 
 		})
 
@@ -143,7 +141,6 @@ func TestStorage(t *testing.T) {
 					So(up.Data, ShouldBeNil)
 				})
 			})
-
 
 		})
 
