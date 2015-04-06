@@ -76,6 +76,9 @@ func createDataRecord(s Storage, bucket, key string, value []byte, nested ...str
 		}
 		return nil
 	})
+	if s.Error!=nil {
+		s.Data=nil   // Make sure no previous data is reurned
+	}
 	return s
 }
 
@@ -96,21 +99,27 @@ func getDataRecord(s Storage, bucket, key string, value []byte, buckets ...strin
 				s.Data = make([]byte, len(res))
 				copy(s.Data, res)
 			}
+			if res==nil {
+				return errors.New("Record not found")
+			}
 			return nil
 		})
+		if s.Error!=nil {
+			s.Data=nil
+		}
 		return s
 	}
 	s.Error = s.db.View(func(tx *bolt.Tx) error {
 		var prev *bolt.Bucket
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
-			return errors.New("Store.GetRecord: bucket" + bucket + "not found")
+			return errors.New("Storage.GetRecord: bucket" + bucket + "not found")
 		}
 		prev = b
 		for i := 0; i < len(buckets); i++ {
 			curr := prev.Bucket([]byte(buckets[i]))
 			if curr == nil {
-				uerr = errors.New("Sore.GetRecord: Bucket " + buckets[i] + "Not found")
+				uerr = errors.New("Sorage.GetRecord: Bucket " + buckets[i] + "Not found")
 				break
 			}
 			prev = curr
@@ -127,6 +136,9 @@ func getDataRecord(s Storage, bucket, key string, value []byte, buckets ...strin
 		copy(s.Data, rst)
 		return nil
 	})
+	if s.Error!=nil {
+		s.Data=nil   // Make sure no previous data is reurned
+	}
 	return s
 }
 
@@ -142,10 +154,15 @@ func updateDataRecord(s Storage, bucket, key string, value []byte, nested ...str
 			if b == nil {
 				return bolt.ErrBucketNotFound
 			}
+			gkey := b.Get([]byte(key))
+			if gkey==nil {
+				return errors.New("Record Not Found")
+			}
 			return b.Put([]byte(key), value)
 		})
-		if s.Error == nil {
-			s.Data = value
+		s.Data=value
+		if s.Error!=nil {
+			s.Data=nil
 		}
 		return s
 	}
@@ -167,10 +184,15 @@ func updateDataRecord(s Storage, bucket, key string, value []byte, nested ...str
 		if uerr != nil {
 			return uerr
 		}
+		gkey := prev.Get([]byte(key))
+		if gkey==nil {
+			return errors.New("Record not Found")
+		}
 		return prev.Put([]byte(key), value)
 	})
-	if s.Error == nil {
-		s.Data = value
+	s.Data=value
+	if s.Error!=nil {
+		s.Data=nil
 	}
 	return s
 }
@@ -230,6 +252,9 @@ func getAll(s Storage, bucket, key string, value []byte, nested ...string) Stora
 		}
 		return nil
 	})
+	if s.Error!=nil {
+		s.Data=nil   // Make sure no previous data is reurned
+	}
 	return s
 }
 
@@ -259,7 +284,7 @@ func removeDataRecord(s Storage, bucket, key string, value []byte, nested ...str
 		for i := 0; i < len(nested); i++ {
 			curr := prev.Bucket([]byte(nested[i]))
 			if curr == nil {
-				uerr = errors.New("Sore.GetRecord: Bucket " + nested[i] + "Not found")
+				uerr = errors.New("Storage.GetRecord: Bucket " + nested[i] + " Not found")
 				break
 			}
 			prev = curr
@@ -276,6 +301,9 @@ func removeDataRecord(s Storage, bucket, key string, value []byte, nested ...str
 		return nil
 
 	})
+	if s.Error!=nil {
+		s.Data=nil   // Make sure no previous data is reurned
+	}
 	return s
 }
 func (s Storage) DeleteDatabase() error {

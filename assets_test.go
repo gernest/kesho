@@ -56,7 +56,9 @@ func TestAssets(t *testing.T) {
 				So(f, ShouldBeNil)
 			})
 			Convey("With absolute path", func() {
-				f, err := ass.Get("/config.json")
+				n := "web/config.json"
+				ass.Save(n)
+				f, err := ass.Get(n)
 
 				So(err, ShouldBeNil)
 				So(f.Name, ShouldEqual, "config.json")
