@@ -79,11 +79,9 @@ func (t *KTemplate) LoadToDB(pathname string) error {
 	if err != nil {
 		return err
 	}
-
 	// Store the assets
-	t.Assets.StaticDirs = []string{path.Join(pathname, config.StaticDir)}
-	t.Assets.AddToStore()
-
+	staticDirs := []string{path.Join(pathname, config.StaticDir)}
+	t.Assets.LoadDirs(staticDirs...)
 	return nil
 
 }

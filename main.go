@@ -33,7 +33,7 @@ func main() {
 
 	// Main app
 	app := &Kesho{
-		Assets: &Assets{Bucket: assetsBucket, Store: mainStore},
+		Assets: &Assets{Bucket: assetsBucket, Store: NewStorage(mainDB, 0600)},
 		Templ: &KTemplate{
 			Store:  mainStore,
 			Bucket: templatesBucket,

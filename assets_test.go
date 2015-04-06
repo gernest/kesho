@@ -1,72 +1,68 @@
 package main
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"path/filepath"
-	"strings"
+	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-
-	"github.com/gorilla/mux"
 )
 
-func TestAssets_All(t *testing.T) {
-	files := []string{
-		"testdata/default/static/css/default.txt",
-		"testdata/base.txt",
-	}
+func TestAssets(t *testing.T) {
 	ass := NewAssets("assets", "asset_test.db")
 	defer ass.Store.DeleteDatabase()
+	dirs := []string{"web/static"}
 
-	// Save Assets
-	for _, file := range files {
-		_, err := ass.Save(file, "testdata")
-		if err != nil {
-			t.Error(err)
-		}
-	}
+	Convey("Testing Assets", t, func() {
+		Convey("Store Assets", func() {
+			Convey("With prefix", func() {
+				n := "web/config.json"
+				f, err := ass.Save(n, "web")
 
-	// Retrieve saved assets
-	for _, file := range files {
-		f, err := ass.Get(strings.TrimPrefix(file, "testdata"))
-		if err != nil {
-			t.Error(err)
-		} else if f.Name != filepath.Base(file) {
-			t.Errorf("Expected %s got %s", filepath.Base(file), f.Name)
-		}
-	}
+				So(err, ShouldBeNil)
+				So(f.Name, ShouldEqual, "config.json")
+			})
+			Convey("Without Prefix", func() {
+				n := "web/config.json"
+				f, err := ass.Save(n)
 
-	// Remove assets
-	for _, file := range files {
-		err := ass.Remove(file)
-		if err != nil {
-			t.Error(err)
-		}
-		f, err := ass.Get(file)
-		if err == nil {
-			t.Errorf(" Expected nil, got %s", f.Name)
-		}
-	}
+				So(err, ShouldBeNil)
+				So(f.Name, ShouldEqual, "config.json")
+			})
+			Convey("With bogus file", func() {
+				n := "web/bogus.json"
+				f, err := ass.Save(n, "web")
 
-	// AddToStore
-	ass.StaticDirs = []string{"testdata/default/static"}
-	n := ass.AddToStore()
-	if n != 2 {
-		t.Errorf("Epected 2 got %d", n)
-	}
+				So(err, ShouldNotBeNil)
+				So(f, ShouldBeNil)
+			})
+		})
 
-	// sreve
-	m := mux.NewRouter()
-	m.HandleFunc("/{filename:.*}", ass.Serve).Methods("GET")
+		Convey("Retrieve some assets", func() {
+			n := "web/config.json"
+			ass.Save(n, "web")
 
-	resp := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", "/css/default.txt", nil)
-	if err != nil {
-		t.Error(err)
-	}
+			f, err := ass.Get("config.json")
 
-	m.ServeHTTP(resp, req)
-	if resp.Code != 200 {
-		t.Errorf("Expected 200 got %d", resp.Body)
-	}
+			So(err, ShouldBeNil)
+			So(f.Name, ShouldEqual, "config.json")
+
+		})
+		Convey("Delet Asset", func() {
+			n := "web/config.json"
+			ass.Save(n, "web")
+
+			err := ass.Delete("config.json")
+
+			f, gerr := ass.Get("config.json")
+
+			So(err, ShouldBeNil)
+			So(gerr, ShouldNotBeNil)
+			So(f, ShouldBeNil)
+		})
+		Convey("Load Assets", func() {
+			ass.LoadDirs(dirs...)
+			file, err := ass.Get("css/docs.css")
+
+			So(err, ShouldBeNil)
+			So(file.Name, ShouldEqual, "docs.css")
+		})
+	})
 }

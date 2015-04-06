@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"bytes"
+	"errors"
 	"github.com/gorilla/mux"
+	"sync"
 )
 
 type File struct {
@@ -26,19 +28,23 @@ func (f *File) Size() int64 {
 }
 
 type Assets struct {
-	Bucket     string
-	Store      *Store
-	StaticDirs []string
+	Bucket string
+	Store  Storage
 }
 
 func NewAssets(bucket, storeName string) *Assets {
 	return &Assets{
 		Bucket: bucket,
-		Store:  NewStore(storeName, 0600, nil),
+		Store:  NewStorage(storeName, 0600),
 	}
 }
 
-func (ass *Assets) Save(filename, prefix string) (file *File, err error) {
+func (ass *Assets) Save(filename string, prefix ...string) (file *File, err error) {
+	var pref string
+	pref = ""
+	if len(prefix) > 0 {
+		pref = prefix[0]
+	}
 	if _, err = os.Stat(filename); err != nil {
 		if os.IsNotExist(err) {
 			return nil, err
@@ -58,42 +64,44 @@ func (ass *Assets) Save(filename, prefix string) (file *File, err error) {
 	if err != nil {
 		return nil, err
 	}
-	key := strings.TrimPrefix(filename, prefix)
+	key := strings.TrimPrefix(filename, pref)
 	if filepath.IsAbs(key) {
 		key = strings.TrimPrefix(key, "/")
 	}
-	if ass.Store.CreateRecord(ass.Bucket, key, packedData).Error != nil {
-		log.Println(err)
+	s := ass.Store.CreateDataRecord(ass.Bucket, key, packedData)
+	if s.Error != nil {
+		return nil, s.Error
 	}
 	return file, err
 }
 
-// AddToSTore save the files in the StaticDirs to database and returs the number
-// of files saved
-func (ass *Assets) AddToStore() (n int) {
-	for _, dir := range ass.StaticDirs {
-		n += ass.loadDir(dir)
+func (ass *Assets) LoadDirs(dirs ...string) {
+	for _, dir := range dirs {
+		ass.loadDir(dir)
 	}
-	return
 }
 
-func (ass *Assets) loadDir(dir string) (n int) {
+func (ass *Assets) loadDir(dir string) {
+	wg := new(sync.WaitGroup)
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
 			return nil
-		} else {
-			_, serr := ass.Save(path, dir)
-			if serr != nil {
-				return serr
-			}
-			n += 1
 		}
+		wg.Add(1)
+		go func(file, dir string, wg *sync.WaitGroup) {
+			_, serr := ass.Save(file, dir)
+			if serr != nil {
+				log.Println(err)
+			}
+			log.Println(file, "--loaded")
+			wg.Done()
+		}(path, dir, wg)
 		return nil
 	})
-	return
+	wg.Wait()
 }
 
 func (ass *Assets) Serve(w http.ResponseWriter, r *http.Request) {
@@ -108,29 +116,32 @@ func (ass *Assets) Serve(w http.ResponseWriter, r *http.Request) {
 	ass.ServeContent(w, r, file)
 }
 
-// ServeContent Borrows heavily on `http.ServeContent`
 func (ass *Assets) ServeContent(w http.ResponseWriter, r *http.Request, file *File) {
 	reader := bytes.NewReader([]byte(file.Body))
 	http.ServeContent(w, r, file.Name, file.UpdatedAt, reader)
 }
 
-func (ass *Assets) Remove(key string) error {
-	return ass.Store.removeRecord(ass.Bucket, key).Error
+func (ass *Assets) Delete(key string) error {
+	rm := ass.Store.RemoveDataRecord(ass.Bucket, key)
+	return rm.Error
 }
 
 func (ass *Assets) Get(key string) (*File, error) {
-	ass.Store.GetRecord(ass.Bucket, key)
-	if ass.Store.Error != nil {
-		return nil, ass.Store.Error
+	g := ass.Store.GetDataRecord(ass.Bucket, key)
+	if g.Error != nil {
+		return nil, g.Error
 	}
-	if ass.Store.Data == nil && filepath.IsAbs(key) {
-		ass.Store.GetRecord(ass.Bucket, strings.TrimPrefix(key, "/"))
-		if ass.Store.Error != nil {
-			return nil, ass.Store.Error
+	if g.Data == nil && filepath.IsAbs(key) {
+		g = ass.Store.GetDataRecord(ass.Bucket, strings.TrimPrefix(key, "/"))
+		if g.Error != nil {
+			return nil, g.Error
 		}
+	} else if g.Data == nil {
+		return nil, errors.New("kesho.Assets: The requested file was deleted")
 	}
+
 	file := new(File)
-	err := json.Unmarshal(ass.Store.Data, file)
+	err := json.Unmarshal(g.Data, file)
 	if err != nil {
 		return nil, err
 	}
