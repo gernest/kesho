@@ -14,22 +14,22 @@ func TestAssets(t *testing.T) {
 	dirs := []string{"web/static"}
 
 	Convey("Testing Assets", t, func() {
-		Convey("Store Assets", func() {
-			Convey("With prefix", func() {
+		Convey("Storing Assets", func() {
+			Convey("With a given path prefix", func() {
 				n := "web/config.json"
 				f, err := ass.Save(n, "web")
 
 				So(err, ShouldBeNil)
 				So(f.Name, ShouldEqual, "config.json")
 			})
-			Convey("Without Prefix", func() {
+			Convey("Without path prefix", func() {
 				n := "web/config.json"
 				f, err := ass.Save(n)
 
 				So(err, ShouldBeNil)
 				So(f.Name, ShouldEqual, "config.json")
 			})
-			Convey("With bogus file", func() {
+			Convey("With a file that does not exist", func() {
 				n := "web/bogus.json"
 				f, err := ass.Save(n, "web")
 
@@ -38,7 +38,7 @@ func TestAssets(t *testing.T) {
 			})
 		})
 
-		Convey("Retrieve some assets", func() {
+		Convey("Retrieving assets", func() {
 
 			Convey("With a valid file", func() {
 				n := "web/config.json"
@@ -49,7 +49,7 @@ func TestAssets(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(f.Name, ShouldEqual, "config.json")
 			})
-			Convey("With a file not in stored", func() {
+			Convey("With a file that does not exist", func() {
 				f, err := ass.Get("kemi.json")
 
 				So(err, ShouldNotBeNil)
@@ -61,7 +61,7 @@ func TestAssets(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(f.Name, ShouldEqual, "config.json")
 			})
-			Convey("With absolute path and wrong file", func() {
+			Convey("With absolute path and a file that does not exist", func() {
 				f, err := ass.Get("/kemi.json")
 
 				So(err, ShouldNotBeNil)
@@ -69,7 +69,7 @@ func TestAssets(t *testing.T) {
 			})
 
 		})
-		Convey("Delet Asset", func() {
+		Convey("Deleting Asset", func() {
 			n := "web/config.json"
 			ass.Save(n, "web")
 
@@ -81,7 +81,7 @@ func TestAssets(t *testing.T) {
 			So(gerr, ShouldNotBeNil)
 			So(f, ShouldBeNil)
 		})
-		Convey("Load Assets", func() {
+		Convey("Load Assets from directories", func() {
 			ass.LoadDirs(dirs...)
 			file, err := ass.Get("css/docs.css")
 
@@ -92,14 +92,14 @@ func TestAssets(t *testing.T) {
 			m := mux.NewRouter()
 			m.HandleFunc("/static/{filename:.*}", ass.Serve).Methods("GET")
 			w := httptest.NewRecorder()
-			Convey("Present files", func() {
+			Convey("A file that exists", func() {
 				r, _ := http.NewRequest("GET", "/static/css/docs.css", nil)
 
 				m.ServeHTTP(w, r)
 				So(w.Code, ShouldEqual, http.StatusOK)
 			})
 
-			Convey("File not current stores", func() {
+			Convey("A file does not exist", func() {
 				r, _ := http.NewRequest("GET", "/static/css/horses.css", nil)
 
 				m.ServeHTTP(w, r)
