@@ -20,8 +20,6 @@ func main() {
 		secretKey       = "892252c6eade0b4ebf32d94aaed79d20"
 		secretValue     = "9451243db34445f4dbf86e0b13bec94d"
 	)
-	cleanDB(mainDB)
-
 	db, _ := bolt.Open(sessDB, 0600, nil)
 	defer db.Close()
 	defer cleanDB(sessDB)
@@ -35,6 +33,7 @@ func main() {
 	sessionStore = ss
 
 	mainStorage := NewStorage(mainDB, 0600)
+	defer mainStorage.DeleteDatabase()
 
 	// Main app
 	app := &Kesho{
@@ -56,14 +55,9 @@ func main() {
 }
 
 func RunMigration(app *Kesho) error {
-	if app.Templ.Exists("kesho") {
-		return nil
-	} else {
-		if err := app.Templ.LoadToDB("kesho"); err != nil {
-			return err
-		}
+	if err := app.Templ.LoadToDB("web"); err != nil {
+		return err
 	}
-
 	return nil
 }
 

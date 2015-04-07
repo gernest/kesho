@@ -260,13 +260,11 @@ func (k Kesho) Run() {
 		log.Fatal(err)
 	}
 	k.Setup()
-
 	log.Println("done")
 	log.Printf("Kesho is running at localhost:%s \n", httpPort)
 	addr := fmt.Sprintf(":%s", httpPort)
 
 	stack := alice.New(ab.ExpireMiddleware).Then(k.Routes())
-
 	log.Fatal(http.ListenAndServe(addr, stack))
 
 }
