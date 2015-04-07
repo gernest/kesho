@@ -1,22 +1,18 @@
 package main
 
 import (
+	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
-func TestPost_All(t *testing.T) {
-	users := []*Account{
-		{
-			UserName:        "gernest",
-			Password:        "gernestAHA",
-			ConfirmPassword: "gernestAHA",
-		},
-		{
-			UserName:        "ISIS",
-			ConfirmPassword: "FUCkYOU",
-			Password:        "FUCkYOU",
-		},
-	}
+func TestPost(t *testing.T) {
+
+	astore := NewStorage("post_test.db", 0600)
+	aBucket := "Accounts"
+	defer astore.DeleteDatabase()
+
+	users := []string{"geofrey", "ernest", "gernest"}
+
 	posts := []struct {
 		Title, Body string
 	}{
@@ -30,50 +26,86 @@ func TestPost_All(t *testing.T) {
 		},
 	}
 
-	store := NewStore("accounts_test.db", 0600, nil)
-	defer store.DeleteDatabase()
+	Convey("Testing posts", t, func() {
+		for _, v := range users {
+			us := NewAccount(aBucket, astore)
+			us.UserName = v
+			err := us.Save()
 
-	var accBucket = "Accounts"
-
-	// Create the accounts
-	for _, usr := range users {
-		usr.Store = store
-		usr.Bucket = accBucket
-		err := usr.StampAndSave()
-		if err != nil {
-			t.Error(err)
+			So(err, ShouldBeNil)
 		}
-	}
+		Convey("Creating Posts", func() {
+			for _, v := range users {
+				us := NewAccount(aBucket, astore)
+				us.UserName = v
+				err := us.Get()
 
-	for _, usr := range users {
+				So(err, ShouldBeNil)
+				for _, post := range posts {
+					p := new(Post)
+					p.Account = us
+					p.Title = post.Title
+					p.Body = post.Body
 
-		for _, v := range posts {
-			post := new(Post)
-			post.Title = v.Title
-			post.Body = v.Body
-			post.Account = usr
+					perr := p.Create()
 
-			err := post.Create()
-			if err != nil {
-				t.Error(err)
+					So(perr, ShouldBeNil)
+
+				}
+
 			}
-		}
+		})
+		Convey("Retrieving posts", func() {
+			for _, v := range users {
+				us := NewAccount(aBucket, astore)
+				us.UserName = v
+				err := us.Get()
 
-	}
+				So(err, ShouldBeNil)
+				for _, post := range posts {
+					p := new(Post)
+					p.Account = us
+					p.Title = post.Title
 
-	for _, usr := range users {
-		for _, v := range posts {
-			post := new(Post)
-			post.Title = v.Title
-			post.Account = usr
+					perr := p.Get()
 
-			err := post.Get()
-			if err != nil {
-				t.Error(err)
+					So(perr, ShouldBeNil)
+					So(p.Body, ShouldEqual, post.Body)
+				}
 			}
-			if post.Body != v.Body {
-				t.Errorf("Expected %s got %s", v.Body, post.Body)
+		})
+		Convey("Updating posts", func() {
+			for _, v := range users {
+				us := NewAccount(aBucket, astore)
+				us.UserName = v
+				err := us.Get()
+
+				So(err, ShouldBeNil)
+				for _, post := range posts {
+					p := new(Post)
+					p2 := new(Post)
+
+					p.Account = us
+					p.Title = post.Title
+
+					perr := p.Get()
+					So(perr, ShouldBeNil)
+
+					p.Body = post.Title
+
+					p2.Account = us
+					p2.Title = post.Title
+
+					perr = p.Update()
+					perr2 := p2.Get()
+
+					So(perr, ShouldBeNil)
+					So(perr2, ShouldBeNil)
+					So(p2.Body, ShouldEqual, post.Title)
+				}
 			}
-		}
-	}
+		})
+
+	})
+
 }

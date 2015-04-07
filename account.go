@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/boltdb/bolt"
+	"errors"
 )
 
 type Account struct {
 	// Storage
-	Store  *Store `json:"-"`
-	Bucket string `json:"-"`
+	Store  Storage `json:"-"`
+	Bucket string  `json:"-"`
 
 	// Schema
 	UserName        string    `json:"username`
@@ -46,71 +46,57 @@ type Account struct {
 	RecoverTokenExpiry time.Time `json:"recover_token_expiry"`
 }
 
-func NewAccount(bucket string, db *Store) *Account {
+func NewAccount(bucket string, db Storage) *Account {
 	return &Account{Store: db, Bucket: bucket}
 }
 
 func (acc *Account) Save() error {
-	return acc.saveUser()
-}
-
-func (acc *Account) saveUser() error {
+	zero := new(time.Time)
+	if acc.CreatedAt == *zero {
+		acc.CreatedAt = time.Now()
+	}
+	acc.UpdatedAt = time.Now()
 	data, err := json.Marshal(acc)
 	if err != nil {
 		return err
 	}
-	return acc.Store.CreateRecord(acc.Bucket, acc.UserName, data, acc.UserName).Error
+	rec := acc.Store.CreateDataRecord(acc.Bucket, acc.UserName, data, acc.UserName)
+	return rec.Error
 }
 
 func (acc *Account) Get() error {
-	if acc.Store.GetRecord(acc.Bucket, acc.UserName, acc.UserName).Error != nil {
-		return acc.Store.Error
+	rec := acc.Store.GetDataRecord(acc.Bucket, acc.UserName, acc.UserName)
+	if rec.Error != nil {
+		return rec.Error
+	} else if rec.Data == nil {
+		return errors.New("No Record Found")
 	}
-	err := json.Unmarshal(acc.Store.Data, acc)
+	err := json.Unmarshal(rec.Data, acc)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (acc *Account) GetUser(name string) (*Account, error) {
-	user := NewAccount(acc.Bucket, acc.Store)
-	if acc.Store.GetRecord(acc.Bucket, name, name).Error != nil {
-		return nil, acc.Store.Error
-	}
-	err := json.Unmarshal(acc.Store.Data, user)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
-}
-
-func (acc *Account) create() error {
-	return acc.Save()
-}
-
-func (acc *Account) StampAndSave() error {
-	zero := new(time.Time)
-	if acc.CreatedAt == *zero {
-		acc.CreatedAt = time.Now()
-	}
-	acc.UpdatedAt = time.Now()
-	return acc.Save()
-}
 func (acc *Account) CreateOauth(key, provider string) error {
 	data, err := json.Marshal(acc)
 	if err != nil {
 		return err
 	}
-	return acc.Store.CreateRecord(acc.Bucket, key, data, "oaut", provider).Error
+	rec := acc.Store.CreateDataRecord(acc.Bucket, key, data, "oaut", provider)
+	return rec.Error
 }
 
 func (acc *Account) GetOauth(key, provider string) (*Account, error) {
 	user := NewAccount(acc.Bucket, acc.Store)
-	if acc.Store.GetRecord(acc.Bucket, key, "oauth", provider).Error != nil {
-		return nil, acc.Store.Error
+	rec := acc.Store.GetDataRecord(acc.Bucket, key, "oauth", provider)
+	if rec.Error != nil {
+		return nil, rec.Error
+	} else if rec.Data == nil {
+		return nil, errors.New("No Such Record")
 	}
-	err := json.Unmarshal(acc.Store.Data, user)
+
+	err := json.Unmarshal(rec.Data, user)
 	if err != nil {
 		return nil, err
 	}
@@ -118,36 +104,31 @@ func (acc *Account) GetOauth(key, provider string) (*Account, error) {
 }
 func (acc *Account) Update() error {
 	acc.UpdatedAt = time.Now()
-	return acc.Save()
+	data, err := json.Marshal(acc)
+	if err != nil {
+		return err
+	}
+	rec := acc.Store.UpdateDataRecord(acc.Bucket, acc.UserName, data, acc.UserName)
+	return rec.Error
 }
 
-func (acc *Account) DeleteUser() error {
-	return acc.Delete(acc.UserName)
-}
-
-func (acc *Account) Delete(name string) error {
-	return acc.deleteUser(name)
-}
-
-func (acc *Account) deleteUser(name string) error {
-	return acc.Store.db.Update(func(tx *bolt.Tx) error {
-		return tx.DeleteBucket([]byte(name))
-	})
+func (acc *Account) Delete() error {
+	rec := acc.Store.RemoveDataRecord(acc.Bucket, acc.UserName, acc.UserName)
+	return rec.Error
 }
 
 func (acc *Account) GetAllUsers() (result []*Account, err error) {
-	result = nil
-	if acc.Store.GetAll(acc.Bucket).Error != nil {
-		return nil, acc.Store.Error
+	all := acc.Store.GetAll(acc.Bucket)
+	if all.Error != nil {
+		return nil, all.Error
 	}
-	for _, v := range acc.Store.DataList {
+	for k, _ := range all.DataList {
 		user := NewAccount(acc.Bucket, acc.Store)
-		err = json.Unmarshal(v, user)
-		if err != nil {
-			break
+		user.UserName = k
+		err = user.Get()
+		if err == nil {
+			result = append(result, user)
 		}
-		result = append(result, user)
 	}
-
 	return
 }

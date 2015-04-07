@@ -5,27 +5,30 @@ import (
 	"log"
 	"os"
 
+	"github.com/boltdb/bolt"
 	"github.com/gorilla/sessions"
 )
 
 func main() {
 	var (
 		mainDB          = "main.db"
+		sessDB          = "sessions.db"
 		assetsBucket    = "assets"
 		templatesBucket = "templates"
 		sessionName     = "kesho"
 		sessionBucket   = "sessions"
-		mainStore       *Store
 		secretKey       = "892252c6eade0b4ebf32d94aaed79d20"
 		secretValue     = "9451243db34445f4dbf86e0b13bec94d"
 	)
 	cleanDB(mainDB)
 
-	mainStore = NewStore(mainDB, 0600, nil)
+	db, _ := bolt.Open(sessDB, 0600, nil)
+	defer db.Close()
+	defer cleanDB(sessDB)
 
 	// Setup session store
 	opts := &sessions.Options{MaxAge: 86400 * 30, Path: "/"}
-	ss, err := NewBStoreFromDB(mainStore.db, sessionBucket, 100, opts, []byte(secretKey), []byte(secretValue))
+	ss, err := NewBStoreFromDB(db, sessionBucket, 100, opts, []byte(secretKey), []byte(secretValue))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -41,7 +44,7 @@ func main() {
 			Bucket: templatesBucket,
 			Cache:  make(map[string]*template.Template),
 		},
-		Store:           mainStore,
+		Store:           mainStorage,
 		AccountsBucket:  "Accounts",
 		SessStore:       ss,
 		SessionName:     sessionName,

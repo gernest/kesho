@@ -1,53 +1,88 @@
 package main
 
-import "testing"
+import (
+	. "github.com/smartystreets/goconvey/convey"
+	"testing"
+)
 
-func TestAccount_All(t *testing.T) {
-	users := []struct {
-		UserName string
-		Password string
-	}{
-		{
-			UserName: "gernest",
-			Password: "gernestAHA",
-		},
-		{
-			UserName: "ISIS",
-			Password: "FUCkYOU",
-		},
-	}
-	store := NewStore("accounts_test.db", 0600, nil)
-	defer store.DeleteDatabase()
-	var accBucket = "Accounts"
+func TestAccounts(t *testing.T) {
+	astore := NewStorage("account)test.db", 0600)
+	defer astore.DeleteDatabase()
 
-	for _, v := range users {
-		usr := NewAccount(accBucket, store)
-		usr.UserName = v.UserName
-		usr.Password = v.Password
-		usr.ConfirmPassword = v.Password
+	users := []string{"geofrey", "ernest", "gernest"}
+	aBucket := "Account"
 
-		err := usr.StampAndSave()
-		if err != nil {
-			t.Error(err)
-		}
-	}
+	Convey("Testing Accounts", t, func() {
+		Convey("Creating new Accounts", func() {
+			for _, v := range users {
+				us := NewAccount(aBucket, astore)
+				us.UserName = v
+				err := us.Save()
 
-	acc := NewAccount(accBucket, store)
+				So(err, ShouldBeNil)
+			}
+		})
+		Convey("Retrieve user from database", func() {
+			for _, v := range users {
+				us := NewAccount(aBucket, astore)
+				us.UserName = v
 
-	for _, v := range users {
-		usr, err := acc.GetUser(v.UserName)
-		if err != nil {
-			t.Error(err)
-		}
-		usr.Template = "kesho"
-		err = usr.Update()
-		if err != nil {
-			t.Error(err)
-		}
-		us, _ := acc.GetUser(v.UserName)
-		if us.Template != usr.Template {
-			t.Errorf("Expected %s got %s", usr.Template, us.Template)
-		}
+				err := us.Get()
 
-	}
+				So(err, ShouldBeNil)
+				So(us.CreatedAt, ShouldNotBeNil) //TODO: add meaningful time comparizon for the field
+			}
+		})
+		Convey("Retrieve All Users", func() {
+			Convey("When the bucket is present", func() {
+				acc := NewAccount(aBucket, astore)
+				usr, err := acc.GetAllUsers()
+
+				So(err, ShouldBeNil)
+				So(len(usr), ShouldEqual, len(users))
+			})
+			Convey("When the bucket is not present", func() {
+				acc := NewAccount("shit", astore)
+				usr, err := acc.GetAllUsers()
+
+				So(err, ShouldNotBeNil)
+				So(len(usr), ShouldEqual, 0)
+			})
+
+		})
+		Convey("Deleting an account", func() {
+			us1 := NewAccount(aBucket, astore)
+			us2 := NewAccount(aBucket, astore)
+
+			us1.UserName = "gernest"
+			err := us1.Delete()
+
+			So(err, ShouldBeNil)
+
+			us2.UserName = "gernest"
+			err = us2.Get()
+
+			So(err, ShouldNotBeNil)
+
+		})
+		Convey("Updating Account details", func() {
+			us1 := NewAccount(aBucket, astore)
+			us2 := NewAccount(aBucket, astore)
+
+			us1.UserName = "geofrey"
+			us1.BlogTitle = "yay"
+			err := us1.Update()
+
+			So(err, ShouldBeNil)
+
+			us2.UserName = "geofrey"
+			err = us2.Get()
+
+			So(err, ShouldBeNil)
+
+			So(us2.BlogTitle, ShouldEqual, us1.BlogTitle)
+
+		})
+	})
+
 }

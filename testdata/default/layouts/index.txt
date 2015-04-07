@@ -1,3 +1,0 @@
-{{template "partials/header.txt"}}
-{{.Bucket}}
-{{template "partials/footer.txt"}}

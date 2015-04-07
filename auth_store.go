@@ -6,7 +6,7 @@ import (
 )
 
 type AccountAuth struct {
-	Store         *Store
+	Store         Storage
 	AccountBucket string
 	TokensBucket  string
 }
@@ -19,7 +19,7 @@ func (a AccountAuth) Create(key string, attr authboss.Attributes) error {
 	}
 	user.Store = a.Store
 	user.Bucket = a.AccountBucket
-	return user.StampAndSave()
+	return user.Save()
 }
 
 func (a AccountAuth) Put(key string, attr authboss.Attributes) error {
@@ -27,8 +27,9 @@ func (a AccountAuth) Put(key string, attr authboss.Attributes) error {
 }
 
 func (a AccountAuth) Get(key string) (result interface{}, err error) {
-	acc := NewAccount(a.AccountBucket, a.Store)
-	user, err := acc.GetUser(key)
+	user := NewAccount(a.AccountBucket, a.Store)
+	user.UserName=key
+	err=user.Get()
 	if err != nil {
 		return nil, authboss.ErrUserNotFound
 	}
@@ -53,25 +54,26 @@ func (a AccountAuth) GetOAuth(uid, provider string) (result interface{}, err err
 }
 
 func (a AccountAuth) AddToken(key, token string) error {
-	return a.Store.CreateRecord(a.TokensBucket, key, []byte(token)).Error
+	tk := a.Store.CreateDataRecord(a.TokensBucket, key, []byte(token))
+	return tk.Error
 }
 
 func (a AccountAuth) DelTokens(key string) error {
-	return a.Store.RemoveRecord(a.TokensBucket, key).Error
+	tk := a.Store.RemoveDataRecord(a.TokensBucket, key)
+	return tk.Error
 }
 
 func (a AccountAuth) UseToken(givenKey, token string) error {
-	a.Store.GetRecord(a.TokensBucket, givenKey)
-	if a.Store.Error != nil {
+	tk := a.Store.GetDataRecord(a.TokensBucket, givenKey)
+	if tk.Error != nil {
 		return authboss.ErrTokenNotFound
-	} else if a.Store.Data == nil {
+	} else if tk.Data == nil {
 		return authboss.ErrTokenNotFound
 	}
 	if string(a.Store.Data) == token {
-		a.Store.RemoveRecord(a.TokensBucket, givenKey)
+		tk.RemoveDataRecord(a.TokensBucket, givenKey)
 		return nil
 	}
-
 	return authboss.ErrTokenNotFound
 }
 

@@ -35,7 +35,7 @@ var funcs = template.FuncMap{
 
 type Kesho struct {
 	AccountsBucket  string
-	Store           *Store
+	Store           Storage
 	Assets          *Assets
 	Templ           *KTemplate
 	SessStore       *BStore
@@ -267,7 +267,6 @@ func (k Kesho) Run() {
 
 	stack := alice.New(ab.ExpireMiddleware).Then(k.Routes())
 
-	defer k.Store.Close()
 	log.Fatal(http.ListenAndServe(addr, stack))
 
 }

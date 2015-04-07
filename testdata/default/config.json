@@ -1,8 +1,0 @@
-{
-  "name": "default",
-  "author": "geofrey ernest",
-  "layouts": "layouts",
-  "vesrion": "0.0.1",
-  "repository": "http://example.com/repo",
-  "static_dir": "static"
-}

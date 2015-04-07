@@ -12,9 +12,7 @@ import (
 	"strings"
 
 	"github.com/gernest/authboss"
-
 	"regexp"
-	"github.com/Sirupsen/logrus"
 )
 
 type KTemplate struct {
@@ -85,7 +83,7 @@ func (t *KTemplate) LoadToDB(pathname string) error {
 func (t *KTemplate) Render(w io.Writer, tmpl string, name string, data interface{}) error {
 	render := t.Cache[tmpl]
 	if render == nil {
-		if err := t.LoadSingle(tmpl); err==nil {
+		if err := t.LoadSingle(tmpl); err == nil {
 			return t.Render(w, tmpl, name, data)
 		}
 		return errors.New("kesho KTemplate.Render: No Template to render")
@@ -101,7 +99,7 @@ func (t *KTemplate) LoadEm() error {
 	if len(b.DataList) == 0 {
 		return errors.New("No templates in the database")
 	}
-	t.Cache=make(map[string]*template.Template)
+	t.Cache = make(map[string]*template.Template)
 	for k, _ := range b.DataList {
 		nb := b.GetAll(t.Bucket, k)
 		if nb.Error != nil || len(nb.DataList) == 0 {
@@ -112,7 +110,6 @@ func (t *KTemplate) LoadEm() error {
 	return nil
 }
 func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
-	logrus.Print("--LOADING---", name)
 	var tmpl *template.Template
 	var layout *template.Template
 	var authTempl map[string][]byte
@@ -159,15 +156,15 @@ func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
 	}
 	t.Cache[tmpl.Name()] = tmpl
 }
-func (t *KTemplate)LoadSingle(name string) error {
-	if t.Cache==nil {
-		t.Cache=make(map[string]*template.Template)
+func (t *KTemplate) LoadSingle(name string) error {
+	if t.Cache == nil {
+		t.Cache = make(map[string]*template.Template)
 	}
 	if t.Exists(name) {
 		return nil
 	}
 	b := t.Store.GetAll(t.Bucket, name)
-	if b.Error!=nil {
+	if b.Error != nil {
 		return b.Error
 	}
 	t.loadThisShit(b.DataList, name)
@@ -176,7 +173,7 @@ func (t *KTemplate)LoadSingle(name string) error {
 
 func (t *KTemplate) Exists(name string) bool {
 	tem := t.Cache[name]
-	if tem!=nil {
+	if tem != nil {
 		return true
 	}
 	return false

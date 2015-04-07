@@ -48,6 +48,7 @@ func TestAssets(t *testing.T) {
 
 				So(err, ShouldBeNil)
 				So(f.Name, ShouldEqual, "config.json")
+				So(f.Size(), ShouldEqual, len(f.Body))
 			})
 			Convey("With a file that does not exist", func() {
 				f, err := ass.Get("kemi.json")
