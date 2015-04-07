@@ -28,8 +28,8 @@ func (a AccountAuth) Put(key string, attr authboss.Attributes) error {
 
 func (a AccountAuth) Get(key string) (result interface{}, err error) {
 	user := NewAccount(a.AccountBucket, a.Store)
-	user.UserName=key
-	err=user.Get()
+	user.UserName = key
+	err = user.Get()
 	if err != nil {
 		return nil, authboss.ErrUserNotFound
 	}
