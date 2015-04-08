@@ -100,6 +100,7 @@ func (t *KTemplate) LoadEm() error {
 		return errors.New("No templates in the database")
 	}
 	t.Cache = make(map[string]*template.Template)
+	t.AuthTempl=make(map[string]*template.Template)
 	for k, _ := range b.DataList {
 		nb := b.GetAll(t.Bucket, k)
 		if nb.Error != nil || len(nb.DataList) == 0 {
@@ -125,26 +126,13 @@ func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
 		},
 	}
 	tmpl = template.New(name)
-	layout = template.Must(template.New("layout").Funcs(funcs).Parse(string(authTempl["layout.html.tpl"])))
 	t.AuthTempl = make(map[string]*template.Template)
 
 	re := regexp.MustCompile("^*[.]html.tpl$")
 
 	for key, value := range m {
 		if re.Match([]byte(key)) {
-			if key == "layout.html.tpl" {
-				continue
-			}
-			clone, err := layout.Clone()
-			if err != nil {
-				panic(err)
-			}
-
-			_, err = clone.New("authboss").Funcs(funcMap).Parse(string(value))
-			if err != nil {
-				panic(err)
-			}
-			t.AuthTempl[key] = clone
+			authTempl[key]=value
 		} else {
 			var ntmpl *template.Template
 			ntmpl = tmpl.New(key)
@@ -154,6 +142,23 @@ func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
 			}
 		}
 	}
+	layout = template.Must(template.New("layout").Funcs(funcs).Parse(string(authTempl["layout.html.tpl"])))
+	for key, value := range authTempl {
+		if key == "layout.html.tpl" {
+			continue
+		}
+		clone, err := layout.Clone()
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = clone.New("authboss").Funcs(funcMap).Parse(string(value))
+		if err != nil {
+			panic(err)
+		}
+		t.AuthTempl[key] = clone
+	}
+
 	t.Cache[tmpl.Name()] = tmpl
 }
 func (t *KTemplate) LoadSingle(name string) error {
