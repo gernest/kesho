@@ -24,7 +24,7 @@ type KTemplate struct {
 	Cache     map[string]*template.Template
 }
 
-type Config struct {
+type TmplConfig struct {
 	Name      string `json:"name"`
 	LayoutDir string `json:"layouts"`
 	StaticDir string `json:"static_dir"`
@@ -48,7 +48,7 @@ func (t *KTemplate) LoadToDB(pathname string) error {
 		return err
 	}
 
-	config := new(Config)
+	config := new(TmplConfig)
 
 	err = json.Unmarshal(data, config)
 	if err != nil {

@@ -8,7 +8,6 @@ import (
 	_ "github.com/gernest/authboss/register"
 	_ "github.com/gernest/authboss/remember"
 	"github.com/gorilla/mux"
-	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
 	"github.com/monoculum/formam"
 	"html/template"
@@ -16,6 +15,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"github.com/boltdb/bolt"
+	"github.com/gorilla/sessions"
 )
 
 const (
@@ -33,14 +34,76 @@ var funcs = template.FuncMap{
 	"yield": func() string { return "" },
 }
 
+type Config struct {
+	AccountsBucket  string
+	TemplatesBucket string
+	SessionBucket   string
+	SessionName string
+	DefaultTemplate string
+
+	SessionDB string
+	MainDB    string
+
+	Secretts  []string
+}
+
+
+
 type Kesho struct {
 	AccountsBucket  string
-	Store           Storage
-	Assets          *Assets
-	Templ           *KTemplate
-	SessStore       *BStore
-	SessionName     string
-	DefaultTemplate string // The default template for the whole site
+	TemplatesBucket string
+	SessionBucket   string
+
+	Store       Storage
+	Assets      *Assets
+	Templ       *KTemplate
+	SessStore   *BStore
+	SessionName string
+
+	DefaultTemplate string
+
+	SessionDB string
+	MainDB    string
+	Secretts  []string
+
+	Cfg *Config
+}
+
+func NewKesho(cfg *Config) *Kesho {
+	return &Kesho{Cfg:cfg}
+}
+
+func (k *Kesho)Initialize() {
+	k.initDefaults()
+}
+
+func (k *Kesho)initDefaults() {
+	k.AccountsBucket="accounts"
+	k.TemplatesBucket="templates"
+	k.SessionBucket="sessions"
+	k.DefaultTemplate="web"
+	k.SessionName="kesho_"
+
+	kStore := NewStorage("mainstore.db", 0660)
+	ass := &Assets{Bucket:"assets", Store:kStore}
+
+	db, err := bolt.Open("sessions.db", 0600, nil)
+	if err!=nil {
+		log.Println(err)
+	}
+	secrets := []string{
+		"892252c6eade0b4ebf32d94aaed79d20",
+		"9451243db34445f4dbf86e0b13bec94d",
+	}
+	opts := &sessions.Options{MaxAge: 86400 * 30, Path: "/"}
+	ss, err := NewBStoreFromDB(db, "sessions", 100, opts, []byte(secrets[0]), []byte(secrets[1]))
+	if err != nil {
+		log.Println(err)
+	}
+	k.Store=kStore
+	k.Assets=ass
+	k.Templ=&KTemplate{Store:kStore, Bucket:k.TemplatesBucket, Assets:ass}
+	k.SessStore=ss
 }
 
 // Our HomePage
@@ -200,7 +263,7 @@ func (k *Kesho) RenderDefaultView(w http.ResponseWriter, name string, data inter
 	err := k.Templ.Render(out, k.DefaultTemplate, name, data)
 
 	if err != nil {
-		log.Println(err)
+		log.Println(err, k.DefaultTemplate, name)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -242,11 +305,15 @@ func (k *Kesho) Setup() {
 	}
 	ab.Cfg.ConfirmFields = []string{"password", "confirm_password"}
 
-	ab.Cfg.CookieStoreMaker = NewSessionStorer
-	ab.Cfg.SessionStoreMaker = NewSessionStorer
+	ab.Cfg.CookieStoreMaker = k.NewSessionStorer
+	ab.Cfg.SessionStoreMaker = k.NewSessionStorer
 
 	if err := ab.Init(); err != nil {
 		log.Fatal(err)
+	}
+
+	if err := k.Templ.LoadToDB(k.DefaultTemplate); err != nil {
+		log.Println(err)
 	}
 }
 
@@ -254,17 +321,14 @@ func (k Kesho) Run() {
 	var (
 		httpPort = "8080"
 	)
-	log.Println("Starting kesho ...")
-	log.Println("Loading templates...")
-	if err := k.Templ.LoadEm(); err != nil {
-		log.Fatal(err)
-	}
+	k.Initialize()
 	k.Setup()
-	log.Println("done")
 	log.Printf("Kesho is running at localhost:%s \n", httpPort)
 	addr := fmt.Sprintf(":%s", httpPort)
+	log.Fatal(http.ListenAndServe(addr, k.Routes()))
 
-	stack := alice.New(ab.ExpireMiddleware).Then(k.Routes())
-	log.Fatal(http.ListenAndServe(addr, stack))
-
+}
+func (k *Kesho)Cleanup() error {
+	os.Remove(k.MainDB)
+	return os.Remove(k.SessionDB)
 }
