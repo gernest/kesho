@@ -3,11 +3,13 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/boltdb/bolt"
 	ab "github.com/gernest/authboss"
 	_ "github.com/gernest/authboss/auth"
 	_ "github.com/gernest/authboss/register"
 	_ "github.com/gernest/authboss/remember"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/justinas/nosurf"
 	"github.com/monoculum/formam"
 	"html/template"
@@ -15,8 +17,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"github.com/boltdb/bolt"
-	"github.com/gorilla/sessions"
 )
 
 const (
@@ -38,16 +38,14 @@ type Config struct {
 	AccountsBucket  string
 	TemplatesBucket string
 	SessionBucket   string
-	SessionName string
+	SessionName     string
 	DefaultTemplate string
 
 	SessionDB string
 	MainDB    string
 
-	Secretts  []string
+	Secretts []string
 }
-
-
 
 type Kesho struct {
 	AccountsBucket  string
@@ -70,25 +68,25 @@ type Kesho struct {
 }
 
 func NewKesho(cfg *Config) *Kesho {
-	return &Kesho{Cfg:cfg}
+	return &Kesho{Cfg: cfg}
 }
 
-func (k *Kesho)Initialize() {
+func (k *Kesho) Initialize() {
 	k.initDefaults()
 }
 
-func (k *Kesho)initDefaults() {
-	k.AccountsBucket="accounts"
-	k.TemplatesBucket="templates"
-	k.SessionBucket="sessions"
-	k.DefaultTemplate="web"
-	k.SessionName="kesho_"
+func (k *Kesho) initDefaults() {
+	k.AccountsBucket = "accounts"
+	k.TemplatesBucket = "templates"
+	k.SessionBucket = "sessions"
+	k.DefaultTemplate = "web"
+	k.SessionName = "kesho_"
 
 	kStore := NewStorage("mainstore.db", 0660)
-	ass := &Assets{Bucket:"assets", Store:kStore}
+	ass := &Assets{Bucket: "assets", Store: kStore}
 
 	db, err := bolt.Open("sessions.db", 0600, nil)
-	if err!=nil {
+	if err != nil {
 		log.Println(err)
 	}
 	secrets := []string{
@@ -100,10 +98,10 @@ func (k *Kesho)initDefaults() {
 	if err != nil {
 		log.Println(err)
 	}
-	k.Store=kStore
-	k.Assets=ass
-	k.Templ=&KTemplate{Store:kStore, Bucket:k.TemplatesBucket, Assets:ass}
-	k.SessStore=ss
+	k.Store = kStore
+	k.Assets = ass
+	k.Templ = &KTemplate{Store: kStore, Bucket: k.TemplatesBucket, Assets: ass}
+	k.SessStore = ss
 }
 
 // Our HomePage
@@ -328,7 +326,7 @@ func (k Kesho) Run() {
 	log.Fatal(http.ListenAndServe(addr, k.Routes()))
 
 }
-func (k *Kesho)Cleanup() error {
+func (k *Kesho) Cleanup() error {
 	os.Remove(k.MainDB)
 	return os.Remove(k.SessionDB)
 }
