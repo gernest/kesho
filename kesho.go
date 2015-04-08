@@ -12,11 +12,9 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/justinas/nosurf"
 	"github.com/monoculum/formam"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
-	"time"
 )
 
 const (
@@ -25,13 +23,6 @@ const (
 
 func init() {
 	log.SetFlags(log.Lshortfile)
-}
-
-var funcs = template.FuncMap{
-	"formatDate": func(date time.Time) string {
-		return date.Format("2006/01/02 03:04pm")
-	},
-	"yield": func() string { return "" },
 }
 
 type Config struct {

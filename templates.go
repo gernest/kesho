@@ -13,6 +13,7 @@ import (
 
 	"github.com/gernest/authboss"
 	"regexp"
+	"time"
 )
 
 type KTemplate struct {
@@ -125,6 +126,14 @@ func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
 			return path.Join(authboss.Cfg.MountPath, location)
 		},
 	}
+
+	var funcs = template.FuncMap{
+		"formatDate": func(date time.Time) string {
+			return date.Format("2006/01/02 03:04pm")
+		},
+		"yield": func() string { return "" },
+	}
+
 	tmpl = template.New(name)
 	t.AuthTempl = make(map[string]*template.Template)
 
@@ -158,7 +167,6 @@ func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
 		}
 		t.AuthTempl[key] = clone
 	}
-
 	t.Cache[tmpl.Name()] = tmpl
 }
 func (t *KTemplate) LoadSingle(name string) error {
