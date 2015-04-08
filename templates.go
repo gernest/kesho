@@ -100,7 +100,7 @@ func (t *KTemplate) LoadEm() error {
 		return errors.New("No templates in the database")
 	}
 	t.Cache = make(map[string]*template.Template)
-	t.AuthTempl=make(map[string]*template.Template)
+	t.AuthTempl = make(map[string]*template.Template)
 	for k, _ := range b.DataList {
 		nb := b.GetAll(t.Bucket, k)
 		if nb.Error != nil || len(nb.DataList) == 0 {
@@ -132,7 +132,7 @@ func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
 
 	for key, value := range m {
 		if re.Match([]byte(key)) {
-			authTempl[key]=value
+			authTempl[key] = value
 		} else {
 			var ntmpl *template.Template
 			ntmpl = tmpl.New(key)
