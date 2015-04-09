@@ -21,10 +21,6 @@ import (
 	"github.com/monoculum/formam"
 )
 
-const (
-	VERSION = "0.0.1"
-)
-
 func init() {
 	log.SetFlags(log.Lshortfile)
 }
@@ -34,6 +30,8 @@ type KConfig struct {
 	SessionBucket   string
 	AssetsBucket    string
 	TemplatesBucket string
+
+	Port string
 
 	SessionName string
 
@@ -241,12 +239,6 @@ func (k *Kesho) PostDelete(w http.ResponseWriter, r *http.Request) {}
 
 func (k *Kesho) PostView(w http.ResponseWriter, r *http.Request) {}
 
-// Version
-func (k *Kesho) Version(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(VERSION))
-	return
-}
-
 // Views
 func (k *Kesho) ViewHome(w http.ResponseWriter, r *http.Request) {}
 func (k *Kesho) ViewPost(w http.ResponseWriter, r *http.Request) {
@@ -279,8 +271,6 @@ func (k *Kesho) ViewPost(w http.ResponseWriter, r *http.Request) {
 	data.Set("post", post)
 	k.RenderDefaultView(w, "post/post.html", data.Data())
 }
-func (k *Kesho) ViewSubHome(w http.ResponseWriter, r *http.Request) {}
-func (k *Kesho) ViewSubPost(w http.ResponseWriter, r *http.Request) {}
 
 func (k *Kesho) RenderDefaultView(w http.ResponseWriter, name string, data interface{}) {
 	out := new(bytes.Buffer)
@@ -341,14 +331,11 @@ func (k Kesho) Run() {
 	var (
 		httpPort = "8080"
 	)
-	log.Println("Starting kesho ...")
-	log.Println("Loading templates...")
 	if err := k.Templ.LoadEm(); err != nil {
 		log.Fatal(err)
 	}
 	defer k.SessStore.DB.Close()
 	k.Setup()
-	log.Println("done")
 	log.Printf("Kesho is running at localhost:%s \n", httpPort)
 	addr := fmt.Sprintf(":%s", httpPort)
 
