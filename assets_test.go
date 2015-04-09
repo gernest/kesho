@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
-	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gorilla/mux"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestAssets(t *testing.T) {

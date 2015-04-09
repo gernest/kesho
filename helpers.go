@@ -1,10 +1,11 @@
 package main
 
 import (
-	ab "github.com/gernest/authboss"
-	"github.com/gorilla/mux"
 	"html/template"
 	"net/http"
+
+	ab "github.com/gernest/authboss"
+	"github.com/gorilla/mux"
 )
 
 func (k *Kesho) NotFound(w http.ResponseWriter, r *http.Request) {

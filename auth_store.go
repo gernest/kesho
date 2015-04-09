@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/gernest/authboss"
 	"log"
+
+	"github.com/gernest/authboss"
 )
 
 type AccountAuth struct {

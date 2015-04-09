@@ -2,8 +2,9 @@ package main
 
 import (
 	"errors"
-	"github.com/boltdb/bolt"
 	"os"
+
+	"github.com/boltdb/bolt"
 )
 
 type Storage struct {

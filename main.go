@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 )
 
 func main() {
@@ -16,8 +15,4 @@ func RunMigration(app *Kesho) error {
 		return err
 	}
 	return nil
-}
-
-func cleanDB(name string) {
-	log.Println(os.Remove(name))
 }

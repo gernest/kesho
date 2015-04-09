@@ -10,10 +10,12 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"log"
+	"regexp"
 
 	"github.com/gernest/authboss"
-	"regexp"
-	"log"
 )
 
 type KTemplate struct {
@@ -26,7 +28,7 @@ type KTemplate struct {
 }
 
 func NewTemplate(s Storage, bucket string, ass *Assets) *KTemplate {
-	return &KTemplate{Store:s, Bucket:bucket, Assets:ass}
+	return &KTemplate{Store: s, Bucket: bucket, Assets: ass}
 }
 
 type Config struct {
@@ -130,6 +132,13 @@ func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
 			}
 			return path.Join(authboss.Cfg.MountPath, location)
 		},
+	}
+
+	var funcs = template.FuncMap{
+		"formatDate": func(date time.Time) string {
+			return date.Format("2006/01/02 03:04pm")
+		},
+		"yield": func() string { return "" },
 	}
 	tmpl = template.New(name)
 	t.AuthTempl = make(map[string]*template.Template)

@@ -3,6 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+
 	"github.com/boltdb/bolt"
 	ab "github.com/gernest/authboss"
 	_ "github.com/gernest/authboss/auth"
@@ -13,11 +17,6 @@ import (
 	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
 	"github.com/monoculum/formam"
-	"html/template"
-	"log"
-	"net/http"
-	"os"
-	"time"
 )
 
 const (
@@ -26,13 +25,6 @@ const (
 
 func init() {
 	log.SetFlags(log.Lshortfile)
-}
-
-var funcs = template.FuncMap{
-	"formatDate": func(date time.Time) string {
-		return date.Format("2006/01/02 03:04pm")
-	},
-	"yield": func() string { return "" },
 }
 
 type KConfig struct {
@@ -69,7 +61,7 @@ type Kesho struct {
 
 func NewKesho(cfg *KConfig) *Kesho {
 	k := new(Kesho)
-	if cfg==nil {
+	if cfg == nil {
 		c := new(KConfig)
 		k.Initialize(c)
 		return k
@@ -83,17 +75,17 @@ func (k *Kesho) Initialize(cfg *KConfig) {
 	if cfg.AccountBucket != "" {
 		k.AccountsBucket = cfg.AccountBucket
 	}
-	k.SessionBucket="sessions"
-	if cfg.SessionBucket!="" {
-		k.SessionBucket=cfg.SessionBucket
+	k.SessionBucket = "sessions"
+	if cfg.SessionBucket != "" {
+		k.SessionBucket = cfg.SessionBucket
 	}
-	k.AssetsBucket="assets"
-	if cfg.AssetsBucket!="" {
-		k.AssetsBucket=cfg.AssetsBucket
+	k.AssetsBucket = "assets"
+	if cfg.AssetsBucket != "" {
+		k.AssetsBucket = cfg.AssetsBucket
 	}
-	k.TemplatesBucket="templates"
-	if cfg.TemplatesBucket!="" {
-		k.TemplatesBucket=cfg.TemplatesBucket
+	k.TemplatesBucket = "templates"
+	if cfg.TemplatesBucket != "" {
+		k.TemplatesBucket = cfg.TemplatesBucket
 	}
 	k.SessionName = "kesho_"
 	if cfg.SessionName != "" {
@@ -127,7 +119,7 @@ func (k *Kesho) Initialize(cfg *KConfig) {
 	k.SessStore = ss
 	k.Store = NewStorage(k.MainDb, 0600)
 	k.Assets = NewAssets(k.AssetsBucket, k.MainDb)
-	k.Templ=NewTemplate(k.Store, k.TemplatesBucket, k.Assets)
+	k.Templ = NewTemplate(k.Store, k.TemplatesBucket, k.Assets)
 
 	// load default template
 	if err := k.Templ.LoadToDB(k.DefaultTemplate); err != nil {

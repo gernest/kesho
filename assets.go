@@ -12,8 +12,9 @@ import (
 
 	"bytes"
 	"errors"
-	"github.com/gorilla/mux"
 	"sync"
+
+	"github.com/gorilla/mux"
 )
 
 type File struct {
