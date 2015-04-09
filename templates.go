@@ -13,6 +13,7 @@ import (
 
 	"github.com/gernest/authboss"
 	"regexp"
+	"log"
 )
 
 type KTemplate struct {
@@ -22,6 +23,10 @@ type KTemplate struct {
 
 	AuthTempl map[string]*template.Template
 	Cache     map[string]*template.Template
+}
+
+func NewTemplate(s Storage, bucket string, ass *Assets) *KTemplate {
+	return &KTemplate{Store:s, Bucket:bucket, Assets:ass}
 }
 
 type Config struct {
@@ -86,6 +91,7 @@ func (t *KTemplate) Render(w io.Writer, tmpl string, name string, data interface
 		if err := t.LoadSingle(tmpl); err == nil {
 			return t.Render(w, tmpl, name, data)
 		}
+		log.Println("Some fish rendering ", tmpl, "-name-", name)
 		return errors.New("kesho KTemplate.Render: No Template to render")
 	}
 	return render.ExecuteTemplate(w, name, data)

@@ -3,11 +3,13 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/boltdb/bolt"
 	ab "github.com/gernest/authboss"
 	_ "github.com/gernest/authboss/auth"
 	_ "github.com/gernest/authboss/register"
 	_ "github.com/gernest/authboss/remember"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
 	"github.com/monoculum/formam"
@@ -33,14 +35,105 @@ var funcs = template.FuncMap{
 	"yield": func() string { return "" },
 }
 
+type KConfig struct {
+	AccountBucket   string
+	SessionBucket   string
+	AssetsBucket    string
+	TemplatesBucket string
+
+	SessionName string
+
+	MainDB string
+	SessDB string
+
+	DefaultTemplate string
+	Secret          []byte
+}
+
 type Kesho struct {
 	AccountsBucket  string
+	SessionBucket   string
+	AssetsBucket    string
+	TemplatesBucket string
+
+	MainDb          string
+	SessDB          string
+	Secret          []byte
 	Store           Storage
 	Assets          *Assets
 	Templ           *KTemplate
 	SessStore       *BStore
 	SessionName     string
 	DefaultTemplate string // The default template for the whole site
+}
+
+func NewKesho(cfg *KConfig) *Kesho {
+	k := new(Kesho)
+	if cfg==nil {
+		c := new(KConfig)
+		k.Initialize(c)
+		return k
+	}
+	k.Initialize(cfg)
+	return k
+}
+
+func (k *Kesho) Initialize(cfg *KConfig) {
+	k.AccountsBucket = "accounts"
+	if cfg.AccountBucket != "" {
+		k.AccountsBucket = cfg.AccountBucket
+	}
+	k.SessionBucket="sessions"
+	if cfg.SessionBucket!="" {
+		k.SessionBucket=cfg.SessionBucket
+	}
+	k.AssetsBucket="assets"
+	if cfg.AssetsBucket!="" {
+		k.AssetsBucket=cfg.AssetsBucket
+	}
+	k.TemplatesBucket="templates"
+	if cfg.TemplatesBucket!="" {
+		k.TemplatesBucket=cfg.TemplatesBucket
+	}
+	k.SessionName = "kesho_"
+	if cfg.SessionName != "" {
+		k.SessionName = cfg.SessionName
+	}
+	k.DefaultTemplate = "kesho"
+	if cfg.DefaultTemplate != "" {
+		k.DefaultTemplate = cfg.DefaultTemplate
+	}
+	k.MainDb = "main.db"
+	if cfg.MainDB != "" {
+		k.MainDb = cfg.MainDB
+	}
+	k.SessDB = "sessions.db"
+	if cfg.SessDB != "" {
+		k.SessDB = cfg.SessDB
+	}
+	k.Secret = []byte("892252c6eade0b4ebf32d94aaed79d20")
+	if cfg.Secret != nil {
+		k.Secret = cfg.Secret
+	}
+	db, err := bolt.Open(k.SessDB, 0600, nil)
+	if err != nil {
+		log.Println(err)
+	}
+	opts := &sessions.Options{MaxAge: 86400 * 30, Path: "/"}
+	ss, err := NewBStoreFromDB(db, k.SessionName, 100, opts, k.Secret)
+	if err != nil {
+		log.Println(err)
+	}
+	k.SessStore = ss
+	k.Store = NewStorage(k.MainDb, 0600)
+	k.Assets = NewAssets(k.AssetsBucket, k.MainDb)
+	k.Templ=NewTemplate(k.Store, k.TemplatesBucket, k.Assets)
+
+	// load default template
+	if err := k.Templ.LoadToDB(k.DefaultTemplate); err != nil {
+		log.Println(err)
+	}
+
 }
 
 // Our HomePage
@@ -259,6 +352,7 @@ func (k Kesho) Run() {
 	if err := k.Templ.LoadEm(); err != nil {
 		log.Fatal(err)
 	}
+	defer k.SessStore.DB.Close()
 	k.Setup()
 	log.Println("done")
 	log.Printf("Kesho is running at localhost:%s \n", httpPort)
