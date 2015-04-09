@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	"net/http/httptest"
+
 	"github.com/boltdb/bolt"
 	ab "github.com/gernest/authboss"
 	_ "github.com/gernest/authboss/auth"
@@ -353,4 +355,8 @@ func (k Kesho) Run() {
 	stack := alice.New(ab.ExpireMiddleware).Then(k.Routes())
 	log.Fatal(http.ListenAndServe(addr, stack))
 
+}
+
+func (k *Kesho) TestServer() *httptest.Server {
+	return httptest.NewServer(k.Routes())
 }
