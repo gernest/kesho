@@ -9,9 +9,8 @@ type SessionStorer struct {
 	r *http.Request
 
 	SessName string
-	Store *BStore
+	Store    *BStore
 }
-
 
 func (s SessionStorer) Get(key string) (string, bool) {
 	session, err := s.Store.Get(s.r, s.SessName)
