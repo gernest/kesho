@@ -68,6 +68,10 @@ func (k *Kesho) AuthlayoutData(w http.ResponseWriter, r *http.Request) ab.HTMLDa
 	}
 }
 
+func (k *Kesho) NewSessionStorer(w http.ResponseWriter, r *http.Request) ab.ClientStorer {
+	return &SessionStorer{w, r, k.SessionName, k.SessStore}
+}
+
 type hdata struct {
 	d map[string]interface{}
 }

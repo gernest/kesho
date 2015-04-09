@@ -242,8 +242,8 @@ func (k *Kesho) Setup() {
 	}
 	ab.Cfg.ConfirmFields = []string{"password", "confirm_password"}
 
-	ab.Cfg.CookieStoreMaker = NewSessionStorer
-	ab.Cfg.SessionStoreMaker = NewSessionStorer
+	ab.Cfg.CookieStoreMaker = k.NewSessionStorer
+	ab.Cfg.SessionStoreMaker = k.NewSessionStorer
 
 	if err := ab.Init(); err != nil {
 		log.Fatal(err)

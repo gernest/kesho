@@ -11,14 +11,14 @@ import (
 
 func main() {
 	var (
-		mainDB = "main.db"
-		sessDB = "sessions.db"
-		assetsBucket = "assets"
+		mainDB          = "main.db"
+		sessDB          = "sessions.db"
+		assetsBucket    = "assets"
 		templatesBucket = "templates"
-		sessionName = "kesho"
-		sessionBucket = "sessions"
-		secretKey = "892252c6eade0b4ebf32d94aaed79d20"
-		secretValue = "9451243db34445f4dbf86e0b13bec94d"
+		sessionName     = "kesho_"
+		sessionBucket   = "sessions"
+		secretKey       = "892252c6eade0b4ebf32d94aaed79d20"
+		secretValue     = "9451243db34445f4dbf86e0b13bec94d"
 	)
 	db, _ := bolt.Open(sessDB, 0600, nil)
 	defer db.Close()
@@ -30,8 +30,6 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	sessionStore = ss
-
 	mainStorage := NewStorage(mainDB, 0600)
 	defer mainStorage.DeleteDatabase()
 
