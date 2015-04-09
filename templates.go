@@ -13,7 +13,6 @@ import (
 
 	"github.com/gernest/authboss"
 	"regexp"
-	"time"
 )
 
 type KTemplate struct {
@@ -25,7 +24,7 @@ type KTemplate struct {
 	Cache     map[string]*template.Template
 }
 
-type TmplConfig struct {
+type Config struct {
 	Name      string `json:"name"`
 	LayoutDir string `json:"layouts"`
 	StaticDir string `json:"static_dir"`
@@ -49,7 +48,7 @@ func (t *KTemplate) LoadToDB(pathname string) error {
 		return err
 	}
 
-	config := new(TmplConfig)
+	config := new(Config)
 
 	err = json.Unmarshal(data, config)
 	if err != nil {
@@ -126,14 +125,6 @@ func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
 			return path.Join(authboss.Cfg.MountPath, location)
 		},
 	}
-
-	var funcs = template.FuncMap{
-		"formatDate": func(date time.Time) string {
-			return date.Format("2006/01/02 03:04pm")
-		},
-		"yield": func() string { return "" },
-	}
-
 	tmpl = template.New(name)
 	t.AuthTempl = make(map[string]*template.Template)
 
@@ -167,6 +158,7 @@ func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
 		}
 		t.AuthTempl[key] = clone
 	}
+
 	t.Cache[tmpl.Name()] = tmpl
 }
 func (t *KTemplate) LoadSingle(name string) error {

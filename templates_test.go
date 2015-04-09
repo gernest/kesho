@@ -31,7 +31,7 @@ func TestKTemplates(t *testing.T) {
 
 		})
 		Convey("Loading single template from database", func() {
-			err := ktemp.LoadSingle("web")
+			err := ktemp.LoadSingle("kesho")
 
 			So(err, ShouldBeNil)
 		})
@@ -40,23 +40,23 @@ func TestKTemplates(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(len(ktemp.Cache), ShouldNotEqual, 0)
-			So(ktemp.Exists("web"), ShouldBeTrue)
+			So(ktemp.Exists("kesho"), ShouldBeTrue)
 			So(len(ktemp.AuthTempl), ShouldEqual, 4)
 		})
 		Convey("Rendering templates", func() {
 			Convey("When the template is loaded", func() {
 				buf := new(bytes.Buffer)
 				data := make(map[string]interface{})
-				data["Title"] = "wa web"
-				err := ktemp.Render(buf, "web", "accounts/index.html", data)
+				data["Title"] = "wa kesho"
+				err := ktemp.Render(buf, "kesho", "accounts/index.html", data)
 
 				So(err, ShouldBeNil)
-				So(buf.String(), ShouldContainSubstring, "wa web")
+				So(buf.String(), ShouldContainSubstring, "wa kesho")
 			})
 			Convey("When the template is not loaded", func() {
 				buf := new(bytes.Buffer)
 				data := make(map[string]interface{})
-				data["Title"] = "wa web"
+				data["Title"] = "wa kesho"
 				err := ktemp.Render(buf, "keshotena", "accounts/index.html", data)
 
 				So(err, ShouldNotBeNil)

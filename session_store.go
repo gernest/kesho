@@ -1,18 +1,25 @@
 package main
 
 import (
+	"github.com/gernest/authboss"
 	"net/http"
 )
 
+const sessionCookieName = "ksh_"
+
+var sessionStore *BStore
+
 type SessionStorer struct {
-	w              http.ResponseWriter
-	r              *http.Request
-	SessCookieName string
-	Store          *BStore
+	w http.ResponseWriter
+	r *http.Request
+}
+
+func NewSessionStorer(w http.ResponseWriter, r *http.Request) authboss.ClientStorer {
+	return &SessionStorer{w, r}
 }
 
 func (s SessionStorer) Get(key string) (string, bool) {
-	session, err := s.Store.Get(s.r, s.SessCookieName)
+	session, err := sessionStore.Get(s.r, sessionCookieName)
 	if err != nil {
 		return "", false
 	}
@@ -29,7 +36,7 @@ func (s SessionStorer) Get(key string) (string, bool) {
 }
 
 func (s SessionStorer) Put(key, value string) {
-	session, err := s.Store.Get(s.r, s.SessCookieName)
+	session, err := sessionStore.Get(s.r, sessionCookieName)
 	if err != nil {
 		return
 	}
@@ -38,7 +45,7 @@ func (s SessionStorer) Put(key, value string) {
 }
 
 func (s SessionStorer) Del(key string) {
-	session, err := s.Store.Get(s.r, s.SessCookieName)
+	session, err := sessionStore.Get(s.r, sessionCookieName)
 	if err != nil {
 		return
 	}
