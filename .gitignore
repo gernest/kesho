@@ -26,3 +26,4 @@ _testmain.go
 *.prof
 *.db
 *.out
+Godeps/_workspace
