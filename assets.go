@@ -12,8 +12,9 @@ import (
 
 	"bytes"
 	"errors"
-	"github.com/gorilla/mux"
 	"sync"
+
+	"github.com/gorilla/mux"
 )
 
 type File struct {
@@ -94,7 +95,7 @@ func (ass *Assets) loadDir(dir string) {
 		go func(file, dir string, wg *sync.WaitGroup) {
 			_, serr := ass.Save(file, dir)
 			if serr != nil {
-				log.Println(err)
+				log.Println("Fish loading file", file, "directory ", dir, serr)
 			}
 			wg.Done()
 		}(path, dir, wg)

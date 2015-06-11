@@ -1,13 +1,15 @@
 package main
 
 import (
-	ab "github.com/gernest/authboss"
-	"github.com/gorilla/mux"
 	"html/template"
 	"net/http"
+
+	ab "github.com/gernest/authboss"
+	"github.com/gorilla/mux"
 )
 
 func (k *Kesho) NotFound(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusFound)
 	k.RenderDefaultView(w, "404.html", nil)
 	return
 }
@@ -39,16 +41,9 @@ func (k *Kesho) Routes() *mux.Router {
 	m.HandleFunc("/post/update/{slug}", k.PostUpdate)
 	m.HandleFunc("/post/view/{slug}/", k.PostView)
 
-	// Version
-	m.HandleFunc("/version", k.Version)
 	// Views
 	m.HandleFunc("/{username}", k.ViewHome)
 	m.HandleFunc("/{username}/{slug}", k.ViewPost)
-
-	// Subdomain View
-	s := m.Host("{subdomain:[a-z]+}.domain.com").Subrouter()
-	s.HandleFunc("/", k.ViewSubHome)
-	s.HandleFunc("/{slug}", k.ViewSubPost)
 	return m
 }
 

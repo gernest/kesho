@@ -10,9 +10,12 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"log"
+	"regexp"
 
 	"github.com/gernest/authboss"
-	"regexp"
 )
 
 type KTemplate struct {
@@ -22,6 +25,10 @@ type KTemplate struct {
 
 	AuthTempl map[string]*template.Template
 	Cache     map[string]*template.Template
+}
+
+func NewTemplate(s Storage, bucket string, ass *Assets) *KTemplate {
+	return &KTemplate{Store: s, Bucket: bucket, Assets: ass}
 }
 
 type Config struct {
@@ -86,6 +93,7 @@ func (t *KTemplate) Render(w io.Writer, tmpl string, name string, data interface
 		if err := t.LoadSingle(tmpl); err == nil {
 			return t.Render(w, tmpl, name, data)
 		}
+		log.Println("Some fish rendering ", tmpl, "-name-", name)
 		return errors.New("kesho KTemplate.Render: No Template to render")
 	}
 	return render.ExecuteTemplate(w, name, data)
@@ -124,6 +132,13 @@ func (t *KTemplate) loadThisShit(m map[string][]byte, name string) {
 			}
 			return path.Join(authboss.Cfg.MountPath, location)
 		},
+	}
+
+	var funcs = template.FuncMap{
+		"formatDate": func(date time.Time) string {
+			return date.Format("2006/01/02 03:04pm")
+		},
+		"yield": func() string { return "" },
 	}
 	tmpl = template.New(name)
 	t.AuthTempl = make(map[string]*template.Template)

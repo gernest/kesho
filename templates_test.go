@@ -2,8 +2,9 @@ package main
 
 import (
 	"bytes"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestKTemplates(t *testing.T) {

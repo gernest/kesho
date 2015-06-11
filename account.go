@@ -83,7 +83,7 @@ func (acc *Account) CreateOauth(key, provider string) error {
 	if err != nil {
 		return err
 	}
-	rec := acc.Store.CreateDataRecord(acc.Bucket, key, data, "oaut", provider)
+	rec := acc.Store.CreateDataRecord(acc.Bucket, key, data, "oauth", provider)
 	return rec.Error
 }
 

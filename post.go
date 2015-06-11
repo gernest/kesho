@@ -2,8 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/gosimple/slug"
 	"time"
+
+	"github.com/gosimple/slug"
 )
 
 type Post struct {

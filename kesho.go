@@ -3,44 +3,129 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+
+	"net/http/httptest"
+
+	"github.com/boltdb/bolt"
 	ab "github.com/gernest/authboss"
 	_ "github.com/gernest/authboss/auth"
 	_ "github.com/gernest/authboss/register"
 	_ "github.com/gernest/authboss/remember"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
 	"github.com/monoculum/formam"
-	"html/template"
-	"log"
-	"net/http"
-	"os"
-	"time"
-)
-
-const (
-	VERSION = "0.0.1"
 )
 
 func init() {
 	log.SetFlags(log.Lshortfile)
 }
 
-var funcs = template.FuncMap{
-	"formatDate": func(date time.Time) string {
-		return date.Format("2006/01/02 03:04pm")
-	},
-	"yield": func() string { return "" },
+type KConfig struct {
+	AccountBucket   string
+	SessionBucket   string
+	AssetsBucket    string
+	TemplatesBucket string
+
+	Port string
+
+	SessionName string
+
+	MainDB string
+	SessDB string
+
+	DefaultTemplate string
+	Secret          []byte
 }
 
 type Kesho struct {
 	AccountsBucket  string
+	SessionBucket   string
+	AssetsBucket    string
+	TemplatesBucket string
+
+	MainDb          string
+	SessDB          string
+	Secret          []byte
 	Store           Storage
 	Assets          *Assets
 	Templ           *KTemplate
 	SessStore       *BStore
 	SessionName     string
 	DefaultTemplate string // The default template for the whole site
+}
+
+func NewKesho(cfg *KConfig) *Kesho {
+	k := new(Kesho)
+	if cfg == nil {
+		c := new(KConfig)
+		k.Initialize(c)
+		return k
+	}
+	k.Initialize(cfg)
+	return k
+}
+
+func (k *Kesho) Initialize(cfg *KConfig) {
+	k.AccountsBucket = "accounts"
+	if cfg.AccountBucket != "" {
+		k.AccountsBucket = cfg.AccountBucket
+	}
+	k.SessionBucket = "sessions"
+	if cfg.SessionBucket != "" {
+		k.SessionBucket = cfg.SessionBucket
+	}
+	k.AssetsBucket = "assets"
+	if cfg.AssetsBucket != "" {
+		k.AssetsBucket = cfg.AssetsBucket
+	}
+	k.TemplatesBucket = "templates"
+	if cfg.TemplatesBucket != "" {
+		k.TemplatesBucket = cfg.TemplatesBucket
+	}
+	k.SessionName = "kesho_"
+	if cfg.SessionName != "" {
+		k.SessionName = cfg.SessionName
+	}
+	k.DefaultTemplate = "kesho"
+	if cfg.DefaultTemplate != "" {
+		k.DefaultTemplate = cfg.DefaultTemplate
+	}
+	k.MainDb = "main.db"
+	if cfg.MainDB != "" {
+		k.MainDb = cfg.MainDB
+	}
+	k.SessDB = "sessions.db"
+	if cfg.SessDB != "" {
+		k.SessDB = cfg.SessDB
+	}
+	k.Secret = []byte("892252c6eade0b4ebf32d94aaed79d20")
+	if cfg.Secret != nil {
+		k.Secret = cfg.Secret
+	}
+	db, err := bolt.Open(k.SessDB, 0600, nil)
+	if err != nil {
+		log.Println(err)
+	}
+	opts := &sessions.Options{MaxAge: 86400 * 30, Path: "/"}
+	ss, err := NewBStoreFromDB(db, k.SessionName, 100, opts, k.Secret)
+	if err != nil {
+		log.Println(err)
+	}
+	k.SessStore = ss
+	k.Store = NewStorage(k.MainDb, 0600)
+	k.Assets = NewAssets(k.AssetsBucket, k.MainDb)
+	k.Templ = NewTemplate(k.Store, k.TemplatesBucket, k.Assets)
+
+	// load default template
+	if err := k.Templ.LoadToDB(k.DefaultTemplate); err != nil {
+		log.Println(err)
+	}
+
 }
 
 // Our HomePage
@@ -154,12 +239,6 @@ func (k *Kesho) PostDelete(w http.ResponseWriter, r *http.Request) {}
 
 func (k *Kesho) PostView(w http.ResponseWriter, r *http.Request) {}
 
-// Version
-func (k *Kesho) Version(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(VERSION))
-	return
-}
-
 // Views
 func (k *Kesho) ViewHome(w http.ResponseWriter, r *http.Request) {}
 func (k *Kesho) ViewPost(w http.ResponseWriter, r *http.Request) {
@@ -192,8 +271,6 @@ func (k *Kesho) ViewPost(w http.ResponseWriter, r *http.Request) {
 	data.Set("post", post)
 	k.RenderDefaultView(w, "post/post.html", data.Data())
 }
-func (k *Kesho) ViewSubHome(w http.ResponseWriter, r *http.Request) {}
-func (k *Kesho) ViewSubPost(w http.ResponseWriter, r *http.Request) {}
 
 func (k *Kesho) RenderDefaultView(w http.ResponseWriter, name string, data interface{}) {
 	out := new(bytes.Buffer)
@@ -254,17 +331,19 @@ func (k Kesho) Run() {
 	var (
 		httpPort = "8080"
 	)
-	log.Println("Starting kesho ...")
-	log.Println("Loading templates...")
 	if err := k.Templ.LoadEm(); err != nil {
 		log.Fatal(err)
 	}
+	defer k.SessStore.DB.Close()
 	k.Setup()
-	log.Println("done")
 	log.Printf("Kesho is running at localhost:%s \n", httpPort)
 	addr := fmt.Sprintf(":%s", httpPort)
 
 	stack := alice.New(ab.ExpireMiddleware).Then(k.Routes())
 	log.Fatal(http.ListenAndServe(addr, stack))
 
+}
+
+func (k *Kesho) TestServer() *httptest.Server {
+	return httptest.NewServer(k.Routes())
 }

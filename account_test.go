@@ -1,8 +1,9 @@
 package main
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestAccounts(t *testing.T) {
@@ -82,6 +83,25 @@ func TestAccounts(t *testing.T) {
 
 			So(us2.BlogTitle, ShouldEqual, us1.BlogTitle)
 
+		})
+		Convey("Oauth", func() {
+			ousr := NewAccount(aBucket, astore)
+			ousr.UserName = "oauthuser"
+			ousr.Save()
+			key := "key"
+			provider := "provider"
+
+			Convey("Create ", func() {
+				err := ousr.CreateOauth(key, provider)
+
+				So(err, ShouldBeNil)
+			})
+			Convey("Retrieving", func() {
+				acc, err := ousr.GetOauth(key, provider)
+
+				So(err, ShouldBeNil)
+				So(acc.UserName, ShouldEqual, ousr.UserName)
+			})
 		})
 	})
 
