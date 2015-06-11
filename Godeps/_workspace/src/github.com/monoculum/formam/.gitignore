@@ -2,11 +2,11 @@
 *.o
 *.a
 *.so
+formam.iml
 
 # Folders
 _obj
 _test
-tmp
 .idea
 
 # Architecture specific extensions/prefixes
@@ -14,7 +14,7 @@ tmp
 [568vq].out
 
 *.cgo1.go
-*.cgo2.cgo
+*.cgo2.c
 _cgo_defun.c
 _cgo_gotypes.go
 _cgo_export.*
@@ -24,6 +24,3 @@ _testmain.go
 *.exe
 *.test
 *.prof
-*.db
-*.out
-
